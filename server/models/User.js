@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
+const Role = require('./Role');
 
 const UserSchema = new mongoose.Schema({
   username: {
@@ -26,7 +27,7 @@ const UserSchema = new mongoose.Schema({
   role: {
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Role',
-    required: true,
+    required: false,
     default: null // Will be set to default role on user creation
   },
   profile: {
@@ -74,7 +75,6 @@ UserSchema.pre('save', async function(next) {
 UserSchema.pre('save', async function(next) {
   if (this.isNew && !this.role) {
     try {
-      const Role = mongoose.model('Role');
       const defaultRole = await Role.getDefaultRole();
       if (defaultRole) {
         this.role = defaultRole._id;
