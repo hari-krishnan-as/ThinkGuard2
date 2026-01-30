@@ -25,6 +25,10 @@ export const AppProvider = ({ children }) => {
     setIsAuthenticated(true);
     // Save user data to localStorage (only after successful login)
     localStorage.setItem('user', JSON.stringify(userData));
+    // Save token if it exists in userData
+    if (userData.token) {
+      localStorage.setItem('token', userData.token);
+    }
   };
 
   const logout = () => {

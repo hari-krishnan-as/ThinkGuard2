@@ -53,6 +53,7 @@ app.get('/api/health', (req, res) => {
 // Import routes
 app.use('/api/users', require('./routes/UserRoutes'));
 app.use('/api/chat', require('./routes/ChatRoutes'));
+app.use('/api/admin', require('./routes/AdminRoutes'));
 
 // Start server
 app.listen(PORT, () => {

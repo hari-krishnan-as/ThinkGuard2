@@ -47,14 +47,17 @@ router.post('/register', async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    console.log('✅ New user registered:', { username, email });
+    console.log(' New user registered:', { username, email });
 
+    // Get user profile with populated role
+    const userProfile = await user.getProfile();
+    
     res.status(201).json({
       success: true,
       message: 'User registered successfully',
       data: {
         token,
-        user: user.getProfile()
+        user: userProfile
       }
     });
 
@@ -108,14 +111,17 @@ router.post('/login', async (req, res) => {
     user.lastLogin = new Date();
     await user.save();
 
-    console.log('✅ User logged in:', { email });
+    console.log(' User logged in:', { email });
+
+    // Get user profile with populated role
+    const userProfile = await user.getProfile();
 
     res.json({
       success: true,
       message: 'Login successful',
       data: {
         token,
-        user: user.getProfile()
+        user: userProfile
       }
     });
 
@@ -134,10 +140,11 @@ router.post('/login', async (req, res) => {
 // @access  Private
 router.get('/profile', auth, async (req, res) => {
   try {
+    const userProfile = await req.user.getProfile();
     res.json({
       success: true,
       data: {
-        user: req.user.getProfile()
+        user: userProfile
       }
     });
   } catch (error) {

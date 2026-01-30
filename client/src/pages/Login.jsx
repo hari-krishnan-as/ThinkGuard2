@@ -7,15 +7,19 @@ const Login = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
-  const { login, isAuthenticated } = useAppContext();
+  const { login, isAuthenticated, user } = useAppContext();
   const navigate = useNavigate();
 
-  // Redirect to chat if already authenticated
+  // Redirect to appropriate dashboard if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
-      navigate('/chat', { replace: true });
+    if (isAuthenticated && user) {
+      if (user.role && (user.role.name === 'admin' || user.role.level >= 1)) {
+        navigate('/admin', { replace: true });
+      } else {
+        navigate('/chat', { replace: true });
+      }
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, user, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -38,8 +42,14 @@ const Login = () => {
         // Store token and user data
         const { token, user } = data.data;
         localStorage.setItem('token', token);
-        login({ email: user.email, name: user.username });
-        navigate('/chat');
+        login({ ...user, token });
+        
+        // Redirect based on user role
+        if (user.role && (user.role.name === 'admin' || user.role.level >= 1)) {
+          navigate('/admin');
+        } else {
+          navigate('/chat');
+        }
       } else {
         setError(data.message || 'Login failed');
       }

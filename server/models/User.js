@@ -23,6 +23,12 @@ const UserSchema = new mongoose.Schema({
     required: [true, 'Password is required'],
     minlength: [6, 'Password must be at least 6 characters']
   },
+  role: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Role',
+    required: true,
+    default: null // Will be set to default role on user creation
+  },
   profile: {
     firstName: { type: String, trim: true },
     lastName: { type: String, trim: true },
@@ -64,13 +70,30 @@ UserSchema.pre('save', async function(next) {
   }
 });
 
+// Assign default role before saving new user
+UserSchema.pre('save', async function(next) {
+  if (this.isNew && !this.role) {
+    try {
+      const Role = mongoose.model('Role');
+      const defaultRole = await Role.getDefaultRole();
+      if (defaultRole) {
+        this.role = defaultRole._id;
+      }
+    } catch (error) {
+      console.error('Error assigning default role:', error);
+    }
+  }
+  next();
+});
+
 // Compare password method
 UserSchema.methods.comparePassword = async function(candidatePassword) {
   return await bcrypt.compare(candidatePassword, this.password);
 };
 
 // Get user profile without sensitive data
-UserSchema.methods.getProfile = function() {
+UserSchema.methods.getProfile = async function() {
+  await this.populate('role');
   return {
     _id: this._id,
     username: this.username,
@@ -79,6 +102,7 @@ UserSchema.methods.getProfile = function() {
     stats: this.stats,
     preferences: this.preferences,
     isActive: this.isActive,
+    role: this.role,
     lastLogin: this.lastLogin,
     createdAt: this.createdAt
   };

@@ -1,9 +1,17 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
 import { MessageSquare, TrendingUp, Clock, Brain } from 'lucide-react';
+import LogoutButton from '../components/LogoutButton';
 
 const Dashboard = () => {
-  const { user, chats, dependencyLevel, thinkingEffort } = useAppContext();
+  const { user, chats, dependencyLevel, thinkingEffort, logout } = useAppContext();
+  const navigate = useNavigate();
+
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
 
   const stats = [
     {
@@ -37,8 +45,13 @@ const Dashboard = () => {
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-white text-3xl font-bold mb-2">Dashboard</h1>
-          <p className="text-gray-400">Welcome back, {user?.name || 'User'}! Here's your AI interaction overview.</p>
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-white text-3xl font-bold mb-2">Dashboard</h1>
+              <p className="text-gray-400">Welcome back, {user?.profile?.firstName || user?.username || 'User'}! Here's your AI interaction overview.</p>
+            </div>
+            <LogoutButton onClick={handleLogout} size="medium" />
+          </div>
         </div>
 
         {/* Stats Grid */}

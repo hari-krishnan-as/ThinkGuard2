@@ -1,9 +1,12 @@
 import React, { useState } from 'react';
 import { Plus, Search, MessageSquare, Trash2, MoreVertical } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
+import { useNavigate } from 'react-router-dom';
+import LogoutButton from './LogoutButton';
 
 const Sidebar = ({ user }) => {
   const [hoveredChatId, setHoveredChatId] = useState(null);
+  const navigate = useNavigate();
   const { 
     chats, 
     currentChat, 
@@ -12,10 +15,16 @@ const Sidebar = ({ user }) => {
     createNewChat, 
     selectChat, 
     getFilteredChats,
-    deleteChat 
+    deleteChat,
+    logout
   } = useAppContext();
   
   const filteredChats = getFilteredChats();
+  
+  const handleLogout = () => {
+    logout();
+    navigate('/login');
+  };
   
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp);
@@ -114,20 +123,23 @@ const Sidebar = ({ user }) => {
 
       {/* User Footer */}
       <div className="p-4 border-t border-gray-700">
-        <div className="flex items-center space-x-3">
-          <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
-            <span className="text-white font-bold text-sm">
-              {user?.name?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'}
-            </span>
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3 flex-1 min-w-0">
+            <div className="w-8 h-8 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full flex items-center justify-center">
+              <span className="text-white font-bold text-sm">
+                {user?.profile?.firstName?.charAt(0).toUpperCase() || user?.username?.charAt(0).toUpperCase() || 'U'}
+              </span>
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-white text-sm font-medium truncate">
+                {user?.profile?.firstName || user?.username || 'User'}
+              </p>
+              <p className="text-gray-400 text-xs truncate">
+                {user?.email || 'user@example.com'}
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-white text-sm font-medium truncate">
-              {user?.name || user?.username || 'User'}
-            </p>
-            <p className="text-gray-400 text-xs truncate">
-              {user?.email || 'user@example.com'}
-            </p>
-          </div>
+          <LogoutButton onClick={handleLogout} size="small" />
         </div>
       </div>
     </div>
