@@ -13,7 +13,6 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-  const { login } = useAppContext();
   const navigate = useNavigate();
 
   const handleChange = (e) => {

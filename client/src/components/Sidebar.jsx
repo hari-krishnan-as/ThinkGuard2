@@ -1,15 +1,12 @@
 import React, { useState } from 'react';
-import { Plus, Search, MessageSquare, Trash2, MoreVertical } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
-import { useNavigate } from 'react-router-dom';
+import { LogOut, MessageSquare, User, Plus, Search, Settings } from 'lucide-react';
 import LogoutButton from './LogoutButton';
 
 const Sidebar = ({ user }) => {
   const [hoveredChatId, setHoveredChatId] = useState(null);
   const navigate = useNavigate();
   const { 
-    chats, 
-    currentChat, 
     searchQuery, 
     setSearchQuery, 
     createNewChat, 

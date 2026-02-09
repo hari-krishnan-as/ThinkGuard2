@@ -7,31 +7,35 @@ import DependencyMeter from '../components/DependencyMeter';
 import { API_BASE_URL } from '../config/api';
 
 const Chat = () => {
-  const { user, currentChat, messages, dependencyLevel, thinkingEffort, addMessage, createNewChat } = useAppContext();
+  const { user, messages, dependencyLevel, thinkingEffort, addMessage } = useAppContext();
   const [message, setMessage] = useState('');
   const [isAtBottom, setIsAtBottom] = React.useState(true);
   const messagesEndRef = React.useRef(null);
   const messagesContainerRef = React.useRef(null);
 
   // Auto-scroll to bottom when messages change
-  const scrollToBottom = () => {
+  const scrollToBottom = React.useCallback(() => {
     if (isAtBottom || messages.length === 0) {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
-  };
-
-  // Check if user is at bottom
-  const handleScroll = () => {
-    if (messagesContainerRef.current) {
-      const { scrollTop, scrollHeight, clientHeight } = messagesContainerRef.current;
-      const atBottom = scrollTop + clientHeight >= scrollHeight - 50; // 50px threshold
-      setIsAtBottom(atBottom);
-    }
-  };
+  }, [isAtBottom, messages.length]);
 
   React.useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, scrollToBottom]);
+
+  React.useEffect(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = container;
+      setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+    };
+
+    container.addEventListener('scroll', handleScroll);
+    return () => container.removeEventListener('scroll', handleScroll);
+  }, [messagesContainerRef]);
 
   React.useEffect(() => {
     // Scroll when typing if user is at bottom

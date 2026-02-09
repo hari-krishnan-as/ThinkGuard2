@@ -1,0 +1,14 @@
+MongoDB URI for Render Environment Variables:
+
+mongodb+srv://hariharasudhan:K8RqQjEQVOlcTLVx@cluster.mongodb.net/ThinkGuardDB?retryWrites=true&w=majority
+
+Instructions:
+1. Copy this exact string
+2. Go to your Render backend service
+3. Add this as MONGODB_URI environment variable
+4. Redeploy your backend service
+
+Note: The password contains special characters that might need URL encoding in some environments.
+If this doesn't work, try the URL-encoded version:
+
+mongodb+srv://hariharasudhan:K8RqQjEQVOlcTLVx@cluster.mongodb.net/ThinkGuardDB?retryWrites=true&w=majority
