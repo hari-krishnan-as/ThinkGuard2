@@ -20,6 +20,13 @@ const Chat = () => {
     }
   }, [isAtBottom, messages.length]);
 
+  const handleScroll = React.useCallback(() => {
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    const { scrollTop, scrollHeight, clientHeight } = container;
+    setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
+  }, [messagesContainerRef]);
+
   React.useEffect(() => {
     scrollToBottom();
   }, [messages, scrollToBottom]);
@@ -28,14 +35,9 @@ const Chat = () => {
     const container = messagesContainerRef.current;
     if (!container) return;
 
-    const handleScroll = () => {
-      const { scrollTop, scrollHeight, clientHeight } = container;
-      setIsAtBottom(scrollTop + clientHeight >= scrollHeight - 10);
-    };
-
     container.addEventListener('scroll', handleScroll);
     return () => container.removeEventListener('scroll', handleScroll);
-  }, [messagesContainerRef]);
+  }, [handleScroll]);
 
   React.useEffect(() => {
     // Scroll when typing if user is at bottom

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { LogOut, MessageSquare, User, Plus, Search, Settings } from 'lucide-react';
+import { LogOut, MessageSquare, User, Plus, Search, Settings, Trash2 } from 'lucide-react';
 import LogoutButton from './LogoutButton';
 
 const Sidebar = ({ user }) => {
@@ -13,7 +14,8 @@ const Sidebar = ({ user }) => {
     selectChat, 
     getFilteredChats,
     deleteChat,
-    logout
+    logout,
+    currentChat
   } = useAppContext();
   
   const filteredChats = getFilteredChats();
