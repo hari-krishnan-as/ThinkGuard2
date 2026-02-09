@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import LogoutButton from '../components/LogoutButton';
+import { API_BASE_URL } from '../config/api';
 
 const AdminDashboard = () => {
   const { user, logout } = useAppContext();
@@ -30,7 +31,7 @@ const AdminDashboard = () => {
       setLoading(true);
       
       // Fetch admin stats
-      const statsResponse = await fetch('http://localhost:5000/api/admin/stats', {
+      const statsResponse = await fetch(`${API_BASE_URL}/admin/stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -42,7 +43,7 @@ const AdminDashboard = () => {
       }
 
       // Fetch users list
-      const usersResponse = await fetch('http://localhost:5000/api/admin/users', {
+      const usersResponse = await fetch(`${API_BASE_URL}/admin/users`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
@@ -63,7 +64,7 @@ const AdminDashboard = () => {
 
   const toggleUserStatus = async (userId, currentStatus) => {
     try {
-      const response = await fetch(`http://localhost:5000/api/admin/users/${userId}/toggle-status`, {
+      const response = await fetch(`${API_BASE_URL}/admin/users/${userId}/toggle-status`, {
         method: 'PUT',
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`,

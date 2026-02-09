@@ -4,6 +4,7 @@ import Sidebar from '../components/Sidebar';
 import ChatMessage from '../components/ChatMessage';
 import ChatInput from '../components/ChatInput';
 import DependencyMeter from '../components/DependencyMeter';
+import { API_BASE_URL } from '../config/api';
 
 const Chat = () => {
   const { user, currentChat, messages, dependencyLevel, thinkingEffort, addMessage, createNewChat } = useAppContext();
@@ -55,7 +56,7 @@ const Chat = () => {
       
       try {
         // Call Gemini API
-        const response = await fetch('http://localhost:5000/api/chat/chat', {
+        const response = await fetch(`${API_BASE_URL}/chat/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
