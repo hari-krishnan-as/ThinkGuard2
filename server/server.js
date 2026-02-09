@@ -24,18 +24,48 @@ app.use((req, res, next) => {
   next();
 });
 
-// MongoDB Connection
-mongoose.connect(process.env.MONGODB_URI, {
-  useNewUrlParser: true,
-  useUnifiedTopology: true,
-})
-.then(() => {
-  console.log('✅ MongoDB connected successfully');
-  console.log(`📍 Database: ${mongoose.connection.name}`);
-})
-.catch((err) => {
-  console.error('❌ MongoDB connection error:', err.message);
-});
+// MongoDB Connection with retry logic
+const connectDB = async () => {
+  const maxRetries = 5;
+  let retries = 0;
+  
+  while (retries < maxRetries) {
+    try {
+      console.log(`🔌 Attempting MongoDB connection (attempt ${retries + 1}/${maxRetries})...`);
+      
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        serverSelectionTimeoutMS: 5000,
+        socketTimeoutMS: 45000,
+      });
+      
+      console.log('✅ MongoDB connected successfully');
+      console.log(`📍 Database: ${mongoose.connection.name}`);
+      console.log(`🌐 Connection host: ${mongoose.connection.host}`);
+      return;
+      
+    } catch (err) {
+      console.error(`❌ MongoDB connection error (attempt ${retries + 1}):`, err.message);
+      retries++;
+      
+      if (retries < maxRetries) {
+        console.log(`⏳ Retrying in 5 seconds...`);
+        await new Promise(resolve => setTimeout(resolve, 5000));
+      } else {
+        console.error('💥 Max retries reached. MongoDB connection failed.');
+        console.error('🔧 Please check:');
+        console.error('   1. MONGODB_URI environment variable');
+        console.error('   2. MongoDB Atlas IP whitelist (add 0.0.0.0/0)');
+        console.error('   3. Database user permissions');
+        console.error('   4. Connection string format');
+      }
+    }
+  }
+};
+
+// Connect to database
+connectDB();
 
 // Health check endpoints
 app.get('/api/health', (req, res) => {
