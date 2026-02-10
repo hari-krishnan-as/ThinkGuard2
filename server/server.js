@@ -9,8 +9,8 @@ const PORT = process.env.PORT || 5000;
 // Middleware
 app.use(cors({
   origin: process.env.NODE_ENV === 'production' 
-    ? ['https://your-frontend-url.onrender.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+    ? ['https://thinkguard-frontend1.onrender.com', 'https://thinkguard-frontend.onrender.com']
+    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -21,7 +21,18 @@ app.use(express.json());
 // Request logging
 app.use((req, res, next) => {
   console.log(`${new Date().toISOString()} - ${req.method} ${req.path}`);
+  console.log(`Origin: ${req.get('origin') || 'No origin'}`);
+  console.log(`User-Agent: ${req.get('user-agent') || 'No user-agent'}`);
   next();
+});
+
+// Handle pre-flight requests
+app.options('*', (req, res) => {
+  res.header('Access-Control-Allow-Origin', req.headers.origin || '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  res.status(200).send();
 });
 
 // MongoDB Connection with retry logic
@@ -87,7 +98,7 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-app.use('/api/users', require('./routes/UserRoutes'));
+app.use('/api', require('./routes/UserRoutes'));
 app.use('/api/chat', require('./routes/ChatRoutes'));
 app.use('/api/admin', require('./routes/AdminRoutes'));
 
