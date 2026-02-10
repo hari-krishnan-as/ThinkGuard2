@@ -92,7 +92,8 @@ app.use('/api/chat', require('./routes/ChatRoutes'));
 app.use('/api/admin', require('./routes/AdminRoutes'));
 
 // Start server
-app.listen(PORT, () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);
   console.log(`🔗 API Base URL: http://localhost:${PORT}/api`);
+  console.log(`🌐 Production URL: https://thinkguard1.onrender.com/api`);
 });
