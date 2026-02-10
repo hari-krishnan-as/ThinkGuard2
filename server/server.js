@@ -99,7 +99,7 @@ app.get('/', (req, res) => {
 
 // API Routes
 app.use('/api/users', require('./routes/UserRoutes'));
-app.use('/api/chat', require('./routes/ChatRoutes'));
+app.use('/api', require('./routes/ChatRoutes'));
 app.use('/api/admin', require('./routes/AdminRoutes'));
 
 // Test route
