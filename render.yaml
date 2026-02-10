@@ -28,11 +28,11 @@ services:
     staticPublishPath: client/build
     envVars:
       - key: REACT_APP_API_URL
-        value: https://thinkguard1.onrender.com
+        value: https://thinkguard1.onrender.com/api
     routes:
       - type: rewrite
         source: /api/*
-        destination: https://thinkguard1.onrender.com
+        destination: https://thinkguard1.onrender.com/api
       - type: rewrite
         source: /*
         destination: /index.html

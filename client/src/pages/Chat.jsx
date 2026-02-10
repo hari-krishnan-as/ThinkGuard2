@@ -62,7 +62,7 @@ const Chat = () => {
       
       try {
         // Call Gemini API
-        const response = await fetch(`${API_BASE_URL}/chat/chat`, {
+        const response = await fetch(`${API_BASE_URL}/chat`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',

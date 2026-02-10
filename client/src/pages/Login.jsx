@@ -29,7 +29,7 @@ const Login = () => {
 
     try {
       // Simulate API call
-      const response = await fetch(`${API_BASE_URL}/users/login`, {
+      const response = await fetch(`${API_BASE_URL}/login`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

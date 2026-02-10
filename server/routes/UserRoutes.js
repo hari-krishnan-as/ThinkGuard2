@@ -12,7 +12,7 @@ const generateToken = (id) => {
   });
 };
 
-// @route   POST /api/users/register
+// @route   POST /api/register
 // @desc    Register a new user
 // @access  Public
 router.post('/register', async (req, res) => {
@@ -71,7 +71,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-// @route   POST /api/users/login
+// @route   POST /api/login
 // @desc    Login user
 // @access  Public
 router.post('/login', async (req, res) => {
@@ -135,7 +135,7 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// @route   GET /api/users/profile
+// @route   GET /api/profile
 // @desc    Get user profile
 // @access  Private
 router.get('/profile', auth, async (req, res) => {
