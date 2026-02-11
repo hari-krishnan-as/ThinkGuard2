@@ -5,13 +5,13 @@ const API_CONFIG = {
     timeout: 10000
   },
   production: {
-    baseURL: process.env.REACT_APP_API_URL || 'https://thinkguard-api.onrender.com/api',
+    baseURL: process.env.REACT_APP_API_URL || 'https://thinkguard1.onrender.com/api',
     timeout: 15000
   }
 };
 
 // Get current environment
-const getEnvironment = () => process.env.NODE_ENV || 'development';
+const getEnvironment = () => process.env.NODE_ENV === 'production' ? 'production' : 'development';
 
 // Get API configuration for current environment
 const getAPIConfig = () => API_CONFIG[getEnvironment()] || API_CONFIG.development;

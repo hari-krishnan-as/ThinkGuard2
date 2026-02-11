@@ -47,7 +47,7 @@ const Chat = () => {
       }, 100); // Small delay to allow input to resize
       return () => clearTimeout(timer);
     }
-  }, [message, isAtBottom]);
+  }, [message, isAtBottom, scrollToBottom]);
 
   const handleSendMessage = async () => {
     if (message.trim()) {

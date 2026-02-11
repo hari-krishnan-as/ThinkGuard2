@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppContext } from '../context/AppContext';
-import { LogOut, MessageSquare, User, Plus, Search, Settings, Trash2 } from 'lucide-react';
+import { MessageSquare, Plus, Search, Trash2 } from 'lucide-react';
 import LogoutButton from './LogoutButton';
 
 const Sidebar = ({ user }) => {

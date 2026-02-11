@@ -102,12 +102,6 @@ app.use('/api/users', require('./routes/UserRoutes'));
 app.use('/api', require('./routes/ChatRoutes'));
 app.use('/api/admin', require('./routes/AdminRoutes'));
 
-// Test route
-app.get('/api/users/test', (req, res) => {
-  console.log('🧪 Test route hit!');
-  res.json({ message: 'Test route working!' });
-});
-
 // Start server
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server is running on port ${PORT}`);

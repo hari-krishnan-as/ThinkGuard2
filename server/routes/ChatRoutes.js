@@ -49,25 +49,17 @@ router.post('/chat', async (req, res) => {
     // If Gemini is available, use it
     if (genAI && GoogleGenerativeAI) {
       try {
-        console.log('🤖 Attempting Gemini API call with VALID model...');
-        console.log('📝 Message:', message.substring(0, 50) + '...');
+        console.log('🤖 Gemini API call:', message.substring(0, 50) + '...');
         
-        // Use ONLY correct available model
         const model = genAI.getGenerativeModel({
-          model: "models/gemini-2.5-flash" // CORRECT AVAILABLE MODEL
+          model: "models/gemini-2.5-flash"
         });
         
-        console.log('✅ Model created: models/gemini-2.5-flash');
-        
-        // Generate response
         const result = await model.generateContent(message);
-        console.log('📡 API call sent, waiting for response...');
-        
         const response = await result.response;
         const text = response.text();
         
-        console.log('✅ Gemini response received!');
-        console.log('📄 Response length:', text.length, 'characters');
+        console.log('✅ Gemini response received');
 
         return res.json({
           success: true,
@@ -80,13 +72,10 @@ router.post('/chat', async (req, res) => {
         });
 
       } catch (geminiError) {
-        console.error('❌ Gemini API Error:');
-        console.error('Error type:', geminiError.constructor.name);
-        console.error('Error message:', geminiError.message);
+        console.error('❌ Gemini API Error:', geminiError.message);
         
         // Fallback to mock response
         const fallbackResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-        console.log('🔄 Using fallback response due to API error');
         
         return res.json({
           success: true,
@@ -94,7 +83,6 @@ router.post('/chat', async (req, res) => {
             response: fallbackResponse,
             timestamp: new Date().toISOString(),
             note: 'Using fallback response - Gemini API unavailable',
-            error: geminiError.message,
             source: 'Mock Response'
           }
         });
@@ -106,7 +94,8 @@ router.post('/chat', async (req, res) => {
         success: true,
         data: {
           response: mockResponse,
-          timestamp: new Date().toISOString()
+          timestamp: new Date().toISOString(),
+          source: 'Mock Response'
         }
       });
     }
@@ -124,90 +113,8 @@ router.post('/chat', async (req, res) => {
 // Also handle root chat path for compatibility
 router.post('/', async (req, res) => {
   console.log('🔄 Handling /api/chat (root path)');
-  
-  try {
-    const { message } = req.body;
-    
-    if (!message) {
-      return res.status(400).json({ 
-        success: false, 
-        message: 'Message is required' 
-      });
-    }
-
-    // If Gemini is available, use it
-    if (genAI && GoogleGenerativeAI) {
-      try {
-        console.log('🤖 Attempting Gemini API call with VALID model...');
-        console.log('📝 Message:', message.substring(0, 50) + '...');
-        
-        // Use ONLY correct available model
-        const model = genAI.getGenerativeModel({
-          model: "models/gemini-2.5-flash" // ✅ CORRECT AVAILABLE MODEL
-        });
-        
-        console.log('✅ Model created: models/gemini-2.5-flash');
-        
-        // Generate response
-        const result = await model.generateContent(message);
-        console.log('📡 API call sent, waiting for response...');
-        
-        const response = await result.response;
-        const text = response.text();
-        
-        console.log('✅ Gemini response received!');
-        console.log('📄 Response length:', text.length, 'characters');
-
-        return res.json({
-          success: true,
-          data: {
-            response: text,
-            timestamp: new Date().toISOString(),
-            model: 'models/gemini-2.5-flash',
-            source: 'Google Gemini AI'
-          }
-        });
-
-      } catch (geminiError) {
-        console.error('❌ Gemini API Error:');
-        console.error('Error type:', geminiError.constructor.name);
-        console.error('Error message:', geminiError.message);
-        
-        // Fallback to mock response
-        const fallbackResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-        console.log('🔄 Using fallback response due to API error');
-        
-        return res.json({
-          success: true,
-          data: {
-            response: fallbackResponse,
-            timestamp: new Date().toISOString(),
-            note: 'Using fallback response - Gemini API unavailable',
-            error: geminiError.message,
-            source: 'Mock Response'
-          }
-        });
-      }
-    } else {
-      // Use mock response when Gemini is not available
-      const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
-      return res.json({
-        success: true,
-        data: {
-          response: mockResponse,
-          timestamp: new Date().toISOString()
-        }
-      });
-    }
-
-  } catch (error) {
-    console.error('Chat API Error:', error);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to generate response',
-      error: error.message
-    });
-  }
+  req.url = '/chat';
+  return router._router.handle(req, res);
 });
 
 // Health check for Gemini
