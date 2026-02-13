@@ -1,4 +1,5 @@
-import React, { createContext, useState, useContext } from 'react';
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import analyzeDependency from '../utils/DependencyAnalysis';
 
 const AppContext = createContext();
 
@@ -19,6 +20,8 @@ export const AppProvider = ({ children }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [dependencyLevel, setDependencyLevel] = useState('low');
   const [thinkingEffort, setThinkingEffort] = useState(0);
+  const [dependencyAnalysis, setDependencyAnalysis] = useState(null);
+  const [sessionStart, setSessionStart] = useState(Date.now());
 
   const login = (userData) => {
     setUser(userData);
@@ -98,15 +101,22 @@ export const AppProvider = ({ children }) => {
         updateChatTitle(currentChat.id, message.text);
       }
     }
-    
-    // Simulate dependency calculation (implement real logic later)
-    const newDependencyLevel = Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low';
-    setDependencyLevel(newDependencyLevel);
-    
-    // Simulate thinking effort calculation
-    const newThinkingEffort = Math.min(100, thinkingEffort + Math.floor(Math.random() * 20));
-    setThinkingEffort(newThinkingEffort);
   };
+
+  // Update dependency analysis when messages change
+  useEffect(() => {
+    if (messages.length > 0) {
+      const currentSession = {
+        duration: Math.floor((Date.now() - sessionStart) / 60000), // minutes
+        messageCount: messages.length
+      };
+      
+      const analysis = analyzeDependency(chats, messages, currentSession);
+      setDependencyAnalysis(analysis);
+      setDependencyLevel(analysis.dependencyLevel);
+      setThinkingEffort(analysis.thinkingEffort);
+    }
+  }, [messages, chats, sessionStart]);
 
   const getFilteredChats = () => {
     if (!searchQuery.trim()) {
@@ -146,6 +156,7 @@ export const AppProvider = ({ children }) => {
     messages,
     dependencyLevel,
     thinkingEffort,
+    dependencyAnalysis,
     searchQuery,
     setSearchQuery,
     createNewChat,
