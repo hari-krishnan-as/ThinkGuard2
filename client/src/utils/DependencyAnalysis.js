@@ -37,10 +37,10 @@ export const analyzeDependency = (chats, messages, currentSession) => {
     impact: responseDependency.impact
   });
 
-  // Factor 4: Session Duration
-  const sessionDuration = analyzeSessionDuration(currentSession);
+  // Factor 4: Session Duration (now Response Time Analysis)
+  const sessionDuration = analyzeSessionDuration(currentSession, currentSession?.thinkingTimes || []);
   analysis.factors.push({
-    name: 'Session Duration',
+    name: 'Response Time',
     score: sessionDuration.score,
     description: sessionDuration.description,
     impact: sessionDuration.impact
@@ -194,25 +194,31 @@ const analyzeResponseDependency = (messages) => {
   return { score, description, impact };
 };
 
-const analyzeSessionDuration = (currentSession) => {
-  const duration = currentSession?.duration || 0; // minutes
+const analyzeSessionDuration = (currentSession, thinkingTimes) => {
+  // Use average thinking time instead of session duration
+  const avgThinkingTime = currentSession?.averageThinkingTime || 0;
+  const responseCount = thinkingTimes?.length || 0;
 
   let score = 0;
   let description = '';
   let impact = '';
 
-  if (duration > 60) {
-    score = 70;
-    description = `Long session: ${duration} minutes`;
-    impact = 'Extended AI usage suggests dependency';
-  } else if (duration > 30) {
-    score = 45;
-    description = `Moderate session: ${duration} minutes`;
-    impact = 'Balanced AI usage';
+  if (avgThinkingTime > 30) {
+    score = 30; // Low score for very slow responses (good - deep thinking)
+    description = `Deep thinking: ${avgThinkingTime.toFixed(1)}s average response time`;
+    impact = 'User takes time to process AI responses carefully';
+  } else if (avgThinkingTime > 10) {
+    score = 45; // Moderate score for thoughtful responses
+    description = `Thoughtful responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    impact = 'User balances thinking with efficiency';
+  } else if (avgThinkingTime > 3) {
+    score = 60; // Higher score for quick responses (potential dependency)
+    description = `Quick responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    impact = 'User responds quickly, may need more consideration';
   } else {
-    score = 25;
-    description = `Short session: ${duration} minutes`;
-    impact = 'Healthy usage patterns';
+    score = 80; // High score for very quick responses (dependency concern)
+    description = `Very quick responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    impact = 'User may be responding impulsively without deep thought';
   }
 
   return { score, description, impact };

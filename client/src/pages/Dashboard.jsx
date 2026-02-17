@@ -5,7 +5,7 @@ import { MessageSquare, TrendingUp, Clock, Brain } from 'lucide-react';
 import LogoutButton from '../components/LogoutButton';
 
 const Dashboard = () => {
-  const { user, chats, dependencyLevel, thinkingEffort, logout } = useAppContext();
+  const { user, chats, dependencyLevel, thinkingEffort, averageThinkingTime, thinkingTimes, logout } = useAppContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -33,10 +33,10 @@ const Dashboard = () => {
       color: dependencyLevel === 'low' ? 'text-green-400' : dependencyLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'
     },
     {
-      title: 'Active Time',
-      value: '2h 34m',
+      title: 'Avg Thinking Time',
+      value: averageThinkingTime > 0 ? `${averageThinkingTime}s` : '0s',
       icon: Clock,
-      color: 'text-gray-400'
+      color: 'text-orange-400'
     }
   ];
 

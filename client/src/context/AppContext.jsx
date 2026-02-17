@@ -22,6 +22,10 @@ export const AppProvider = ({ children }) => {
   const [thinkingEffort, setThinkingEffort] = useState(0);
   const [dependencyAnalysis, setDependencyAnalysis] = useState(null);
   const [sessionStart, setSessionStart] = useState(Date.now());
+  const [lastMessageTime, setLastMessageTime] = useState(null);
+  const [lastMessageSender, setLastMessageSender] = useState(null);
+  const [thinkingTimes, setThinkingTimes] = useState([]);
+  const [averageThinkingTime, setAverageThinkingTime] = useState(0);
 
   const login = (userData) => {
     setUser(userData);
@@ -70,11 +74,27 @@ export const AppProvider = ({ children }) => {
   };
 
   const addMessage = (message) => {
+    const currentTime = Date.now();
     const newMessage = {
       ...message,
-      id: Date.now(),
+      id: currentTime,
       timestamp: new Date().toISOString()
     };
+    
+    // Track thinking time (time between AI response and user message)
+    if (message.sender === 'user' && lastMessageSender === 'ai' && lastMessageTime) {
+      const thinkingTime = (currentTime - lastMessageTime) / 1000; // Convert to seconds
+      const newThinkingTimes = [...thinkingTimes, thinkingTime];
+      setThinkingTimes(newThinkingTimes);
+      
+      // Calculate average thinking time
+      const avgTime = newThinkingTimes.reduce((sum, time) => sum + time, 0) / newThinkingTimes.length;
+      setAverageThinkingTime(Math.round(avgTime * 10) / 10); // Round to 1 decimal place
+    }
+    
+    // Update last message tracking
+    setLastMessageTime(currentTime);
+    setLastMessageSender(message.sender);
     
     // Check if this is the first message in the current chat
     const isFirstMessage = message.sender === 'user' && currentChat && 
@@ -108,7 +128,9 @@ export const AppProvider = ({ children }) => {
     if (messages.length > 0) {
       const currentSession = {
         duration: Math.floor((Date.now() - sessionStart) / 60000), // minutes
-        messageCount: messages.length
+        messageCount: messages.length,
+        averageThinkingTime: averageThinkingTime,
+        thinkingTimes: thinkingTimes
       };
       
       const analysis = analyzeDependency(chats, messages, currentSession);
@@ -116,7 +138,7 @@ export const AppProvider = ({ children }) => {
       setDependencyLevel(analysis.dependencyLevel);
       setThinkingEffort(analysis.thinkingEffort);
     }
-  }, [messages, chats, sessionStart]);
+  }, [messages, chats, sessionStart, averageThinkingTime, thinkingTimes]);
 
   const getFilteredChats = () => {
     if (!searchQuery.trim()) {
@@ -157,6 +179,8 @@ export const AppProvider = ({ children }) => {
     dependencyLevel,
     thinkingEffort,
     dependencyAnalysis,
+    averageThinkingTime,
+    thinkingTimes,
     searchQuery,
     setSearchQuery,
     createNewChat,

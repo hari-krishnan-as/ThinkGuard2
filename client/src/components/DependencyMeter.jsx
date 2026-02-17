@@ -3,7 +3,7 @@ import { useAppContext } from '../context/AppContext';
 import { BarChart3, TrendingUp } from 'lucide-react';
 
 const DependencyMeter = ({ dependencyLevel }) => {
-  const { dependencyAnalysis, messages } = useAppContext();
+  const { dependencyAnalysis, messages, averageThinkingTime, thinkingTimes } = useAppContext();
   const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false);
 
   // Lock scroll when detailed analytics is open
@@ -154,8 +154,13 @@ const DependencyMeter = ({ dependencyLevel }) => {
               <span className="text-gray-400 text-xs">Thinking Time</span>
             </div>
             <span className="text-white font-bold text-lg">
-              {dependencyAnalysis?.factors?.find(f => f.name === 'Session Duration')?.description?.match(/\d+/)?.[0] || 0}m
+              {averageThinkingTime > 0 ? `${averageThinkingTime}s` : '0s'}
             </span>
+            {thinkingTimes.length > 0 && (
+              <div className="text-gray-400 text-xs mt-1">
+                {thinkingTimes.length} responses
+              </div>
+            )}
           </div>
         </div>
 
