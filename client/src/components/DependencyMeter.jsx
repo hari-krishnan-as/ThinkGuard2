@@ -143,8 +143,12 @@ const DependencyMeter = ({ dependencyLevel }) => {
               <span className="text-gray-400 text-xs">Key Clicks</span>
             </div>
             <span className="text-white font-bold text-lg">
-              {messages.reduce((total, msg) => total + (msg.text?.length || 0), 0)}
+              {messages.filter(msg => msg.sender === 'user')
+                .reduce((total, msg) => total + (msg.text?.length || 0), 0)}
             </span>
+            <div className="text-gray-400 text-xs mt-1">
+              User only
+            </div>
           </div>
 
           {/* Thinking Time */}

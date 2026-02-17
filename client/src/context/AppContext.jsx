@@ -81,10 +81,20 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString()
     };
     
-    // Track thinking time (time between AI response and user message)
+    // Track thinking time (time between AI response and user message, weighted by AI response size)
     if (message.sender === 'user' && lastMessageSender === 'ai' && lastMessageTime) {
-      const thinkingTime = (currentTime - lastMessageTime) / 1000; // Convert to seconds
-      const newThinkingTimes = [...thinkingTimes, thinkingTime];
+      // Find the last AI message to get its size
+      const lastAIMessage = messages.slice(0, -1).reverse().find(msg => msg.sender === 'ai');
+      const aiResponseSize = lastAIMessage?.text?.length || 100; // Default to 100 if not found
+      
+      // Calculate thinking time
+      const rawThinkingTime = (currentTime - lastMessageTime) / 1000; // Convert to seconds
+      
+      // Adjust thinking time based on AI response size (larger responses = more thinking time expected)
+      const sizeMultiplier = Math.max(0.5, Math.min(2.0, aiResponseSize / 100)); // 0.5x to 2.0x multiplier
+      const adjustedThinkingTime = rawThinkingTime / sizeMultiplier;
+      
+      const newThinkingTimes = [...thinkingTimes, adjustedThinkingTime];
       setThinkingTimes(newThinkingTimes);
       
       // Calculate average thinking time
