@@ -5,7 +5,18 @@ import { MessageSquare, TrendingUp, Clock, Brain } from 'lucide-react';
 import LogoutButton from '../components/LogoutButton';
 
 const Dashboard = () => {
-  const { user, chats, dependencyLevel, thinkingEffort, averageThinkingTime, thinkingTimes, logout } = useAppContext();
+  const { 
+    user, 
+    chats, 
+    dependencyLevel, 
+    thinkingEffort, 
+    averageThinkingTime, 
+    thinkingTimes,
+    messageAdjustment,
+    keyClicksAdjustment,
+    thinkingTimeAdjustment,
+    logout 
+  } = useAppContext();
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -16,13 +27,13 @@ const Dashboard = () => {
   const stats = [
     {
       title: 'Total Chats',
-      value: chats.length,
+      value: Math.round(chats.length * messageAdjustment),
       icon: MessageSquare,
       color: 'text-blue-400'
     },
     {
       title: 'Thinking Effort',
-      value: `${thinkingEffort}%`,
+      value: `${thinkingEffort || 0}%`,
       icon: Brain,
       color: 'text-purple-400'
     },
@@ -34,7 +45,7 @@ const Dashboard = () => {
     },
     {
       title: 'Avg Thinking Time',
-      value: averageThinkingTime > 0 ? `${averageThinkingTime}s` : '0s',
+      value: averageThinkingTime > 0 ? `${Math.round(averageThinkingTime * thinkingTimeAdjustment)}s` : '0s',
       icon: Clock,
       color: 'text-orange-400'
     }

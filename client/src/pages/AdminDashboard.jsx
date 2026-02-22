@@ -16,6 +16,11 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  
+  // Admin adjustment values
+  const [messageAdjustment, setMessageAdjustment] = useState(1);
+  const [keyClicksAdjustment, setKeyClicksAdjustment] = useState(1);
+  const [thinkingTimeAdjustment, setThinkingTimeAdjustment] = useState(1);
 
   const handleLogout = () => {
     logout();
@@ -122,7 +127,7 @@ const AdminDashboard = () => {
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6 mb-8">
         <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
@@ -138,18 +143,6 @@ const AdminDashboard = () => {
         <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-gray-400 text-sm">Total Chats</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">{stats.totalChats}</p>
-            </div>
-            <div className="w-12 h-12 bg-green-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-              <span className="text-green-400 text-xl">💬</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
               <p className="text-gray-400 text-sm">Active Users</p>
               <p className="text-2xl sm:text-3xl font-bold text-white">{stats.activeUsers}</p>
             </div>
@@ -158,15 +151,129 @@ const AdminDashboard = () => {
             </div>
           </div>
         </div>
+      </div>
 
-        <div className="bg-gray-800 p-4 sm:p-6 rounded-lg border border-gray-700">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-400 text-sm">New Today</p>
-              <p className="text-2xl sm:text-3xl font-bold text-white">{stats.newUsersToday}</p>
+      {/* Dependency Metrics Adjustment */}
+      <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-8">
+        <div className="p-4 sm:p-6 border-b border-gray-700">
+          <h2 className="text-xl font-semibold text-white mb-4">Dependency Metrics Adjustment</h2>
+          <p className="text-gray-400 text-sm mb-6">Adjust the scaling factors for dependency metrics across all users</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
+            {/* Message Count Adjustment */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Message Count
+              </label>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setMessageAdjustment(Math.max(1, messageAdjustment - 1))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-white font-medium min-w-[3rem] text-center">
+                  {messageAdjustment}
+                </span>
+                <button
+                  onClick={() => setMessageAdjustment(messageAdjustment + 1)}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Multiply chat count by {messageAdjustment}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {messageAdjustment} number used as dependency
+              </p>
             </div>
-            <div className="w-12 h-12 bg-yellow-500 bg-opacity-20 rounded-lg flex items-center justify-center">
-              <span className="text-yellow-400 text-xl">📈</span>
+
+            {/* Key Clicks Adjustment */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Key Clicks
+              </label>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setKeyClicksAdjustment(Math.max(1, keyClicksAdjustment - 1))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-white font-medium min-w-[3rem] text-center">
+                  {keyClicksAdjustment}
+                </span>
+                <button
+                  onClick={() => setKeyClicksAdjustment(keyClicksAdjustment + 1)}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Multiply key clicks by {keyClicksAdjustment}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {keyClicksAdjustment} number used as dependency
+              </p>
+            </div>
+
+            {/* Thinking Time Adjustment */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Thinking Time
+              </label>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setThinkingTimeAdjustment(Math.max(1, thinkingTimeAdjustment - 1))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-white font-medium min-w-[3rem] text-center">
+                  {thinkingTimeAdjustment}
+                </span>
+                <button
+                  onClick={() => setThinkingTimeAdjustment(thinkingTimeAdjustment + 1)}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                Multiply thinking time by {thinkingTimeAdjustment}
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {thinkingTimeAdjustment} number used as dependency
+              </p>
+            </div>
+          </div>
+
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
+            <h3 className="text-white font-medium mb-3">Quick Actions</h3>
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  setMessageAdjustment(1);
+                  setKeyClicksAdjustment(1);
+                  setThinkingTimeAdjustment(1);
+                }}
+                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
+              >
+                Reset to Default
+              </button>
+              <button
+                onClick={() => {
+                  setMessageAdjustment(2);
+                  setKeyClicksAdjustment(2);
+                  setThinkingTimeAdjustment(2);
+                }}
+                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+              >
+                Double All (×2)
+              </button>
             </div>
           </div>
         </div>
@@ -190,12 +297,6 @@ const AdminDashboard = () => {
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-300 uppercase tracking-wider">
                   Status
-                </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-300 uppercase tracking-wider">
-                  Chats
-                </th>
-                <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-300 uppercase tracking-wider">
-                  Last Login
                 </th>
                 <th className="px-4 sm:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-300 uppercase tracking-wider">
                   Actions
@@ -228,12 +329,6 @@ const AdminDashboard = () => {
                     }`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                    {user.stats?.totalChats || 0}
-                  </td>
-                  <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-400">
-                    {user.lastLogin ? new Date(user.lastLogin).toLocaleDateString() : 'Never'}
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                     <button

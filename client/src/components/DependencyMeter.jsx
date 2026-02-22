@@ -3,7 +3,15 @@ import { useAppContext } from '../context/AppContext';
 import { BarChart3, TrendingUp } from 'lucide-react';
 
 const DependencyMeter = ({ dependencyLevel }) => {
-  const { dependencyAnalysis, messages, averageThinkingTime, thinkingTimes } = useAppContext();
+  const { 
+    dependencyAnalysis, 
+    messages, 
+    averageThinkingTime, 
+    thinkingTimes,
+    messageAdjustment,
+    keyClicksAdjustment,
+    thinkingTimeAdjustment
+  } = useAppContext();
   const [showDetailedAnalytics, setShowDetailedAnalytics] = useState(false);
 
   // Lock scroll when detailed analytics is open
@@ -134,6 +142,9 @@ const DependencyMeter = ({ dependencyLevel }) => {
             <span className="text-white font-bold text-lg">
               {dependencyAnalysis?.thinkingEffort || 0}%
             </span>
+            <div className="text-gray-400 text-xs mt-1">
+              Calculated from metrics
+            </div>
           </div>
 
           {/* Key Clicks */}
@@ -143,12 +154,14 @@ const DependencyMeter = ({ dependencyLevel }) => {
               <span className="text-gray-400 text-xs">Key Clicks</span>
             </div>
             <span className="text-white font-bold text-lg">
-              {messages.filter(msg => msg.sender === 'user')
-                .reduce((total, msg) => total + (msg.text?.length || 0), 0)}
+              {Math.round(messages.filter(msg => msg.sender === 'user')
+                .reduce((total, msg) => total + (msg.text?.length || 0), 0) * keyClicksAdjustment)}
             </span>
-            <div className="text-gray-400 text-xs mt-1">
-              User only
-            </div>
+            {keyClicksAdjustment !== 1 && (
+              <div className="text-gray-400 text-xs mt-1">
+                ×{keyClicksAdjustment}
+              </div>
+            )}
           </div>
 
           {/* Thinking Time */}
@@ -158,11 +171,11 @@ const DependencyMeter = ({ dependencyLevel }) => {
               <span className="text-gray-400 text-xs">Thinking Time</span>
             </div>
             <span className="text-white font-bold text-lg">
-              {averageThinkingTime > 0 ? `${averageThinkingTime}s` : '0s'}
+              {averageThinkingTime > 0 ? `${Math.round(averageThinkingTime * thinkingTimeAdjustment)}s` : '0s'}
             </span>
-            {thinkingTimes.length > 0 && (
+            {thinkingTimeAdjustment !== 1 && (
               <div className="text-gray-400 text-xs mt-1">
-                {thinkingTimes.length} responses
+                ×{thinkingTimeAdjustment}
               </div>
             )}
           </div>

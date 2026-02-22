@@ -26,6 +26,9 @@ export const AppProvider = ({ children }) => {
   const [lastMessageSender, setLastMessageSender] = useState(null);
   const [thinkingTimes, setThinkingTimes] = useState([]);
   const [averageThinkingTime, setAverageThinkingTime] = useState(0);
+  const [messageAdjustment, setMessageAdjustment] = useState(1);
+  const [keyClicksAdjustment, setKeyClicksAdjustment] = useState(1);
+  const [thinkingTimeAdjustment, setThinkingTimeAdjustment] = useState(1);
 
   const login = (userData) => {
     setUser(userData);
@@ -187,7 +190,6 @@ export const AppProvider = ({ children }) => {
     currentChat,
     messages,
     dependencyLevel,
-    thinkingEffort,
     dependencyAnalysis,
     averageThinkingTime,
     thinkingTimes,
@@ -204,6 +206,9 @@ export const AppProvider = ({ children }) => {
     setMessages,
     setDependencyLevel,
     setThinkingEffort,
+    messageAdjustment,
+    keyClicksAdjustment,
+    thinkingTimeAdjustment,
     login,
     logout
   };
