@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useRef } from 'react';
 import analyzeDependency from '../utils/DependencyAnalysis';
 
 const AppContext = createContext();
@@ -21,14 +21,32 @@ export const AppProvider = ({ children }) => {
   const [dependencyLevel, setDependencyLevel] = useState('low');
   const [thinkingEffort, setThinkingEffort] = useState(0);
   const [dependencyAnalysis, setDependencyAnalysis] = useState(null);
-  const [sessionStart, setSessionStart] = useState(Date.now());
-  const [lastMessageTime, setLastMessageTime] = useState(null);
-  const [lastMessageSender, setLastMessageSender] = useState(null);
-  const [thinkingTimes, setThinkingTimes] = useState([]);
-  const [averageThinkingTime, setAverageThinkingTime] = useState(0);
-  const [messageAdjustment, setMessageAdjustment] = useState(1);
-  const [keyClicksAdjustment, setKeyClicksAdjustment] = useState(1);
-  const [thinkingTimeAdjustment, setThinkingTimeAdjustment] = useState(1);
+
+  // Session-based dependency system
+  const [sessionDuration, setSessionDuration] = useState(15); // minutes
+  const [keyClickThreshold, setKeyClickThreshold] = useState(15);
+  const [thinkingTimeMultiplier, setThinkingTimeMultiplier] = useState(0.05); // seconds per character/word
+  
+  // Session-specific state
+  const [sessionStartTime, setSessionStartTime] = useState(null);
+  const [sessionMessageCount, setSessionMessageCount] = useState(0);
+  const [sessionKeyClicks, setSessionKeyClicks] = useState(0);
+  const [sessionAIResponseLength, setSessionAIResponseLength] = useState(0);
+  const [sessionExpectedThinkingTime, setSessionExpectedThinkingTime] = useState(0);
+  const [sessionActualThinkingDelay, setSessionActualThinkingDelay] = useState(0);
+  const [sessionDependencyScore, setSessionDependencyScore] = useState(0);
+  const [sessionEndTime, setSessionEndTime] = useState(null);
+  const [previousSessionScore, setPreviousSessionScore] = useState(null);
+  const [isSessionActive, setIsSessionActive] = useState(false);
+  
+  const sessionTimerRef = useRef(null);
+  const lastAIResponseTimeRef = useRef(null);
+
+  const getDependencyLevel = (score) => {
+    if (score >= 70) return 'high';
+    if (score >= 40) return 'medium';
+    return 'low';
+  };
 
   const login = (userData) => {
     setUser(userData);
@@ -39,12 +57,24 @@ export const AppProvider = ({ children }) => {
     if (userData.token) {
       localStorage.setItem('token', userData.token);
     }
+    
+    // Check if this is first login (no previous session data)
+    const hasPreviousSession = localStorage.getItem('lastSessionData');
+    if (!hasPreviousSession) {
+      setDependencyLevel('hidden');
+      setThinkingEffort(0);
+    } else {
+      const previousSessionData = JSON.parse(localStorage.getItem('lastSessionData') || '{}');
+      if (previousSessionData.dependencyScore !== undefined) {
+        setDependencyLevel(getDependencyLevel(previousSessionData.dependencyScore));
+        setThinkingEffort(previousSessionData.dependencyScore);
+      }
+    }
   };
 
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
-    // Clear all authentication data from localStorage
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
@@ -63,10 +93,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const updateChatTitle = (chatId, firstMessage) => {
-    const title = firstMessage.length > 30 
-      ? firstMessage.substring(0, 30) + '...' 
-      : firstMessage;
-    
+    const title = firstMessage.length > 30 ? firstMessage.substring(0, 30) + '...' : firstMessage;
     setChats(prevChats => 
       prevChats.map(chat => 
         chat.id === chatId 
@@ -74,6 +101,92 @@ export const AppProvider = ({ children }) => {
           : chat
       )
     );
+  };
+
+  const selectChat = (chat) => {
+    setCurrentChat(chat);
+    setMessages(chat.messages || []);
+  };
+
+  const deleteChat = (chatId) => {
+    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
+    if (currentChat && currentChat.id === chatId) {
+      setCurrentChat(null);
+      setMessages([]);
+    }
+  };
+
+  const getFilteredChats = () => {
+    if (!searchQuery) return chats;
+    return chats.filter(chat => 
+      chat.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (chat.messages && chat.messages.some(msg => 
+        msg.text.toLowerCase().includes(searchQuery.toLowerCase())
+      ))
+    );
+  };
+
+  const startNewSession = () => {
+    const now = Date.now();
+    setSessionStartTime(now);
+    setSessionMessageCount(0);
+    setSessionKeyClicks(0);
+    setSessionAIResponseLength(0);
+    setSessionExpectedThinkingTime(0);
+    setSessionActualThinkingDelay(0);
+    setSessionDependencyScore(0);
+    setSessionEndTime(now + (sessionDuration * 60 * 1000)); // Convert to milliseconds
+    setIsSessionActive(true);
+    
+    // Clear any existing timer
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+    }
+    
+    sessionTimerRef.current = setInterval(() => {
+      if (Date.now() >= sessionEndTime) {
+        endCurrentSession();
+      }
+    }, 1000);
+  };
+
+  const endCurrentSession = () => {
+    if (sessionTimerRef.current) {
+      clearInterval(sessionTimerRef.current);
+      sessionTimerRef.current = null;
+    }
+    setSessionEndTime(Date.now());
+    setIsSessionActive(false);
+  };
+
+  const storeSessionData = () => {
+    const sessionData = {
+      startTime: sessionStartTime,
+      endTime: sessionEndTime,
+      messageCount: sessionMessageCount,
+      keyClicks: sessionKeyClicks,
+      averageAIResponseLength: sessionAIResponseLength / Math.max(1, sessionMessageCount),
+      expectedThinkingTime: sessionExpectedThinkingTime / Math.max(1, sessionMessageCount),
+      actualThinkingDelay: sessionActualThinkingDelay / Math.max(1, sessionMessageCount),
+      dependencyScore: sessionDependencyScore,
+      duration: sessionDuration
+    };
+    
+    localStorage.setItem('lastSessionData', JSON.stringify(sessionData));
+  };
+
+  const resetSessionCounters = () => {
+    setSessionMessageCount(0);
+    setSessionKeyClicks(0);
+    setSessionAIResponseLength(0);
+    setSessionExpectedThinkingTime(0);
+    setSessionActualThinkingDelay(0);
+  };
+
+  const calculateExpectedThinkingTime = (aiResponseText) => {
+    const wordCount = aiResponseText.split(' ').length;
+    const charCount = aiResponseText.length;
+    return Math.max(wordCount * thinkingTimeMultiplier * 60, charCount * thinkingTimeMultiplier * 0.1);
   };
 
   const addMessage = (message) => {
@@ -84,38 +197,46 @@ export const AppProvider = ({ children }) => {
       timestamp: new Date().toISOString()
     };
     
-    // Track thinking time (time between AI response and user message, weighted by AI response size)
-    if (message.sender === 'user' && lastMessageSender === 'ai' && lastMessageTime) {
-      // Find the last AI message to get its size
-      const lastAIMessage = messages.slice(0, -1).reverse().find(msg => msg.sender === 'ai');
-      const aiResponseSize = lastAIMessage?.text?.length || 100; // Default to 100 if not found
-      
-      // Calculate thinking time
-      const rawThinkingTime = (currentTime - lastMessageTime) / 1000; // Convert to seconds
-      
-      // Adjust thinking time based on AI response size (larger responses = more thinking time expected)
-      const sizeMultiplier = Math.max(0.5, Math.min(2.0, aiResponseSize / 100)); // 0.5x to 2.0x multiplier
-      const adjustedThinkingTime = rawThinkingTime / sizeMultiplier;
-      
-      const newThinkingTimes = [...thinkingTimes, adjustedThinkingTime];
-      setThinkingTimes(newThinkingTimes);
-      
-      // Calculate average thinking time
-      const avgTime = newThinkingTimes.reduce((sum, time) => sum + time, 0) / newThinkingTimes.length;
-      setAverageThinkingTime(Math.round(avgTime * 10) / 10); // Round to 1 decimal place
+    if (message.sender === 'user' && !isSessionActive) {
+      startNewSession();
     }
     
-    // Update last message tracking
-    setLastMessageTime(currentTime);
-    setLastMessageSender(message.sender);
+    if (message.sender === 'ai') {
+      lastAIResponseTimeRef.current = currentTime;
+    }
     
-    // Check if this is the first message in the current chat
+    if (message.sender === 'user' && lastAIResponseTimeRef.current && isSessionActive) {
+      const actualThinkingDelay = (currentTime - lastAIResponseTimeRef.current) / 1000;
+      setSessionActualThinkingDelay(prev => prev + actualThinkingDelay);
+      
+      const previousAIMessages = messages.filter(msg => msg.sender === 'ai');
+      const lastAIMessage = previousAIMessages[previousAIMessages.length - 1];
+      if (lastAIMessage) {
+        const expectedThinkingTime = calculateExpectedThinkingTime(lastAIMessage.text || '');
+        setSessionExpectedThinkingTime(prev => prev + expectedThinkingTime);
+        
+        setSessionDependencyScore(prev => 
+          actualThinkingDelay < expectedThinkingTime 
+            ? Math.min(100, prev + 5)
+            : Math.max(0, prev - 3)
+        );
+      }
+    }
+    
+    if (isSessionActive) {
+      if (message.sender === 'user') {
+        setSessionMessageCount(prev => prev + 1);
+        setSessionKeyClicks(prev => prev + (message.text?.length || 0));
+      } else if (message.sender === 'ai') {
+        setSessionAIResponseLength(prev => prev + (message.text?.length || 0));
+      }
+    }
+    
     const isFirstMessage = message.sender === 'user' && currentChat && 
       (!currentChat.messages || currentChat.messages.length === 0);
     
     setMessages(prevMessages => [...prevMessages, newMessage]);
     
-    // Save message to current chat
     if (currentChat) {
       setChats(prevChats => 
         prevChats.map(chat => 
@@ -129,21 +250,22 @@ export const AppProvider = ({ children }) => {
         )
       );
       
-      // Update chat title when first user message is added
       if (isFirstMessage) {
         updateChatTitle(currentChat.id, message.text);
       }
     }
   };
 
-  // Update dependency analysis when messages change
   useEffect(() => {
-    if (messages.length > 0) {
+    if (messages.length > 0 && isSessionActive) {
       const currentSession = {
-        duration: Math.floor((Date.now() - sessionStart) / 60000), // minutes
-        messageCount: messages.length,
-        averageThinkingTime: averageThinkingTime,
-        thinkingTimes: thinkingTimes
+        duration: sessionDuration,
+        messageCount: sessionMessageCount,
+        averageThinkingTime: sessionActualThinkingDelay / Math.max(1, sessionMessageCount),
+        thinkingTimes: [],
+        sessionStartTime,
+        sessionEndTime,
+        sessionDependencyScore
       };
       
       const analysis = analyzeDependency(chats, messages, currentSession);
@@ -151,37 +273,16 @@ export const AppProvider = ({ children }) => {
       setDependencyLevel(analysis.dependencyLevel);
       setThinkingEffort(analysis.thinkingEffort);
     }
-  }, [messages, chats, sessionStart, averageThinkingTime, thinkingTimes]);
+  }, [messages, chats, sessionMessageCount, sessionActualThinkingDelay, isSessionActive]);
 
-  const getFilteredChats = () => {
-    if (!searchQuery.trim()) {
-      return chats;
-    }
-    return chats.filter(chat => 
-      chat.title.toLowerCase().startsWith(searchQuery.toLowerCase())
-    );
-  };
-
-  const selectChat = (chat) => {
-    setCurrentChat(chat);
-    // Load messages from the selected chat
-    setMessages(chat.messages || []);
-  };
-
-  const deleteChat = (chatId) => {
-    setChats(prevChats => prevChats.filter(chat => chat.id !== chatId));
-    
-    // If the deleted chat was the current chat, switch to a new one or clear
-    if (currentChat?.id === chatId) {
-      const remainingChats = chats.filter(chat => chat.id !== chatId);
-      if (remainingChats.length > 0) {
-        selectChat(remainingChats[0]);
-      } else {
-        setCurrentChat(null);
-        setMessages([]);
+  useEffect(() => {
+    return () => {
+      if (sessionTimerRef.current) {
+        clearInterval(sessionTimerRef.current);
+        sessionTimerRef.current = null;
       }
-    }
-  };
+    };
+  }, []);
 
   const value = {
     user,
@@ -190,9 +291,30 @@ export const AppProvider = ({ children }) => {
     currentChat,
     messages,
     dependencyLevel,
+    thinkingEffort,
     dependencyAnalysis,
-    averageThinkingTime,
-    thinkingTimes,
+    
+    // Session-based metrics
+    sessionDuration,
+    keyClickThreshold,
+    sessionStartTime,
+    sessionMessageCount,
+    sessionKeyClicks,
+    sessionAIResponseLength,
+    sessionExpectedThinkingTime,
+    sessionActualThinkingDelay,
+    sessionDependencyScore,
+    sessionEndTime,
+    previousSessionScore,
+    isSessionActive,
+    
+    // Session management functions
+    startNewSession,
+    endCurrentSession,
+    storeSessionData,
+    resetSessionCounters,
+    calculateExpectedThinkingTime,
+    
     searchQuery,
     setSearchQuery,
     createNewChat,
@@ -206,9 +328,9 @@ export const AppProvider = ({ children }) => {
     setMessages,
     setDependencyLevel,
     setThinkingEffort,
-    messageAdjustment,
-    keyClicksAdjustment,
-    thinkingTimeAdjustment,
+    setSessionDuration,
+    setKeyClickThreshold,
+    setPreviousSessionScore,
     login,
     logout
   };

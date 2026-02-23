@@ -15,6 +15,18 @@ const Dashboard = () => {
     messageAdjustment,
     keyClicksAdjustment,
     thinkingTimeAdjustment,
+    
+    // Session-based metrics
+    sessionMessageCount,
+    sessionKeyClicks,
+    sessionAIResponseLength,
+    sessionExpectedThinkingTime,
+    sessionActualThinkingDelay,
+    sessionDependencyScore,
+    sessionStartTime,
+    sessionEndTime,
+    previousSessionScore,
+    isSessionActive,
     logout 
   } = useAppContext();
   const navigate = useNavigate();
@@ -26,26 +38,29 @@ const Dashboard = () => {
 
   const stats = [
     {
-      title: 'Total Chats',
-      value: Math.round(chats.length * messageAdjustment),
+      title: 'Session Messages',
+      value: sessionMessageCount,
       icon: MessageSquare,
       color: 'text-blue-400'
     },
     {
-      title: 'Thinking Effort',
-      value: `${thinkingEffort || 0}%`,
+      title: 'Session Key Clicks',
+      value: Math.round(sessionKeyClicks * keyClicksAdjustment),
       icon: Brain,
       color: 'text-purple-400'
     },
     {
-      title: 'Dependency Level',
-      value: dependencyLevel.charAt(0).toUpperCase() + dependencyLevel.slice(1),
+      title: 'Current Dependency',
+      value: isSessionActive ? `${Math.round(sessionDependencyScore)}%` : 'No Active Session',
       icon: TrendingUp,
-      color: dependencyLevel === 'low' ? 'text-green-400' : dependencyLevel === 'medium' ? 'text-yellow-400' : 'text-red-400'
+      color: sessionDependencyScore >= 70 ? 'text-red-400' : sessionDependencyScore >= 40 ? 'text-yellow-400' : 'text-green-400'
     },
     {
       title: 'Avg Thinking Time',
-      value: averageThinkingTime > 0 ? `${Math.round(averageThinkingTime * thinkingTimeAdjustment)}s` : '0s',
+      value: sessionMessageCount > 0 ? 
+        `${Math.round((sessionActualThinkingDelay / sessionMessageCount) * thinkingTimeAdjustment)}s` : 
+        '0s'
+      ,
       icon: Clock,
       color: 'text-orange-400'
     }

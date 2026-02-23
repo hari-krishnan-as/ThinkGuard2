@@ -21,6 +21,8 @@ const AdminDashboard = () => {
   const [messageAdjustment, setMessageAdjustment] = useState(1);
   const [keyClicksAdjustment, setKeyClicksAdjustment] = useState(1);
   const [thinkingTimeAdjustment, setThinkingTimeAdjustment] = useState(1);
+  const [sessionDuration, setSessionDuration] = useState(15); // minutes
+  const [keyClickThreshold, setKeyClickThreshold] = useState(15);
 
   const handleLogout = () => {
     logout();
@@ -190,6 +192,66 @@ const AdminDashboard = () => {
               </p>
             </div>
 
+            {/* Session Duration Adjustment */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Session Duration (minutes)
+              </label>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setSessionDuration(Math.max(5, sessionDuration - 5))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-white font-medium min-w-[3rem] text-center">
+                  {sessionDuration}
+                </span>
+                <button
+                  onClick={() => setSessionDuration(Math.min(60, sessionDuration + 5))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                {sessionDuration} minute sessions
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {sessionDuration} number used as dependency
+              </p>
+            </div>
+
+            {/* Key Click Threshold Adjustment */}
+            <div className="bg-gray-700 p-4 rounded-lg">
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Key Click Threshold
+              </label>
+              <div className="flex items-center space-x-3">
+                <button
+                  onClick={() => setKeyClickThreshold(Math.max(1, keyClickThreshold - 1))}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
+                >
+                  -
+                </button>
+                <span className="text-white font-medium min-w-[3rem] text-center">
+                  {keyClickThreshold}
+                </span>
+                <button
+                  onClick={() => setKeyClickThreshold(keyClickThreshold + 1)}
+                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
+                >
+                  +
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-2">
+                High engagement threshold: {keyClickThreshold} clicks
+              </p>
+              <p className="text-xs text-gray-400 mt-1">
+                {keyClickThreshold} number used as dependency
+              </p>
+            </div>
+
             {/* Key Clicks Adjustment */}
             <div className="bg-gray-700 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -223,11 +285,11 @@ const AdminDashboard = () => {
             {/* Thinking Time Adjustment */}
             <div className="bg-gray-700 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Thinking Time
+                Thinking Time Multiplier
               </label>
               <div className="flex items-center space-x-3">
                 <button
-                  onClick={() => setThinkingTimeAdjustment(Math.max(1, thinkingTimeAdjustment - 1))}
+                  onClick={() => setThinkingTimeAdjustment(Math.max(0.01, thinkingTimeAdjustment - 0.01))}
                   className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
                 >
                   -
@@ -236,14 +298,14 @@ const AdminDashboard = () => {
                   {thinkingTimeAdjustment}
                 </span>
                 <button
-                  onClick={() => setThinkingTimeAdjustment(thinkingTimeAdjustment + 1)}
+                  onClick={() => setThinkingTimeAdjustment(Math.min(0.2, thinkingTimeAdjustment + 0.01))}
                   className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
                 >
                   +
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-2">
-                Multiply thinking time by {thinkingTimeAdjustment}
+                {thinkingTimeAdjustment} seconds per word
               </p>
               <p className="text-xs text-gray-400 mt-1">
                 {thinkingTimeAdjustment} number used as dependency
@@ -259,6 +321,8 @@ const AdminDashboard = () => {
                   setMessageAdjustment(1);
                   setKeyClicksAdjustment(1);
                   setThinkingTimeAdjustment(1);
+                  setSessionDuration(15);
+                  setKeyClickThreshold(15);
                 }}
                 className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
               >
@@ -269,10 +333,24 @@ const AdminDashboard = () => {
                   setMessageAdjustment(2);
                   setKeyClicksAdjustment(2);
                   setThinkingTimeAdjustment(2);
+                  setSessionDuration(30);
+                  setKeyClickThreshold(25);
                 }}
                 className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
               >
                 Double All (×2)
+              </button>
+              <button
+                onClick={() => {
+                  setMessageAdjustment(0.5);
+                  setKeyClicksAdjustment(0.5);
+                  setThinkingTimeAdjustment(0.5);
+                  setSessionDuration(7.5);
+                  setKeyClickThreshold(25);
+                }}
+                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
+              >
+                Half All (×0.5)
               </button>
             </div>
           </div>

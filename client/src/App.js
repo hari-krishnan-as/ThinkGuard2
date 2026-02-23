@@ -4,6 +4,7 @@ import Register from "./pages/Register";
 import Chat from "./pages/Chat";
 import Dashboard from "./pages/Dashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import DetailedAnalytics from "./pages/DetailedAnalytics";
 import NotFound from "./pages/NotFound";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
@@ -28,6 +29,14 @@ function App() {
         element={
           <ProtectedRoute>
             <Dashboard />
+          </ProtectedRoute>
+        } 
+      />
+      <Route 
+        path="/detailed-analytics" 
+        element={
+          <ProtectedRoute>
+            <DetailedAnalytics />
           </ProtectedRoute>
         } 
       />

@@ -112,7 +112,7 @@ const Chat = () => {
           onScroll={handleScroll}
           className="flex-1 overflow-y-auto"
         >
-          <div className="max-w-3xl mx-auto px-3 sm:px-4 py-4">
+          <div className="max-w-4xl mx-auto px-3 sm:px-4 py-4">
             {messages.length === 0 ? (
               <div className="flex items-center justify-center h-full">
                 <div className="text-center">
@@ -126,7 +126,7 @@ const Chat = () => {
                 </div>
               </div>
             ) : (
-              <div className="space-y-4 pb-32">
+              <div className="space-y-4 pb-24">
                 {messages.map((msg) => (
                   <ChatMessage key={msg.id} message={msg} />
                 ))}
@@ -138,8 +138,8 @@ const Chat = () => {
         </div>
         
         {/* Chat Input - Fixed at bottom */}
-        <div className="absolute bottom-0 left-0 right-0 bg-gray-900 bg-opacity-95 backdrop-blur-sm border-t border-gray-700">
-          <div className="max-w-3xl mx-auto p-3 sm:p-4">
+        <div className="flex-shrink-0 bg-gray-900 border-t border-gray-700">
+          <div className="max-w-4xl mx-auto p-3 sm:p-4">
             <ChatInput 
               message={message} 
               setMessage={setMessage} 
@@ -149,14 +149,15 @@ const Chat = () => {
         </div>
       </div>
       
-      {/* Right Sidebar - Hidden on mobile, shown on larger screens */}
-      <div className="hidden lg:block w-80 bg-gray-800 border-l border-gray-700 flex flex-col">
-        <div className="p-4 sm:p-6">
-          <h3 className="text-white font-semibold mb-4 text-sm sm:text-base">Analysis</h3>
-          <DependencyMeter 
-            dependencyLevel={dependencyLevel} 
-            thinkingEffort={thinkingEffort} 
-          />
+      {/* Right Sidebar - Fixed width, full height analytics */}
+      <div className="hidden lg:block w-80 bg-gray-800 border-l border-gray-700">
+        <div className="h-screen overflow-y-auto">
+          <div className="p-4 sm:p-6 pb-20">
+            <DependencyMeter 
+              dependencyLevel={dependencyLevel} 
+              thinkingEffort={thinkingEffort} 
+            />
+          </div>
         </div>
       </div>
     </div>

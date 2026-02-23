@@ -10,6 +10,14 @@ export const analyzeDependency = (chats, messages, currentSession) => {
     recommendations: []
   };
 
+  // Use only session-based metrics
+  const sessionMessageCount = currentSession?.sessionMessageCount || 0;
+  const sessionKeyClicks = currentSession?.sessionKeyClicks || 0;
+  const sessionAIResponseLength = currentSession?.sessionAIResponseLength || 0;
+  const sessionExpectedThinkingTime = currentSession?.sessionExpectedThinkingTime || 0;
+  const sessionActualThinkingDelay = currentSession?.sessionActualThinkingDelay || 0;
+  const keyClickThreshold = currentSession?.keyClickThreshold || 15;
+
   // Factor 1: Message Frequency Analysis
   const messageFrequency = analyzeMessageFrequency(messages, currentSession);
   analysis.factors.push({
@@ -38,7 +46,7 @@ export const analyzeDependency = (chats, messages, currentSession) => {
   });
 
   // Factor 4: Session Duration (now Response Time Analysis)
-  const sessionDuration = analyzeSessionDuration(currentSession, currentSession?.thinkingTimes || []);
+  const sessionDuration = analyzeSessionDuration(currentSession);
   analysis.factors.push({
     name: 'Response Time',
     score: sessionDuration.score,
@@ -64,11 +72,65 @@ export const analyzeDependency = (chats, messages, currentSession) => {
     impact: criticalThinking.impact
   });
 
-  // Calculate overall dependency score
-  const totalScore = analysis.factors.reduce((sum, factor) => sum + factor.score, 0);
-  const averageScore = totalScore / analysis.factors.length;
+  // Factor 7: Key Click Engagement
+  const keyClickEngagement = analyzeKeyClickEngagement(currentSession);
+  analysis.factors.push({
+    name: 'Key Click Engagement',
+    score: keyClickEngagement.score,
+    description: keyClickEngagement.description,
+    impact: keyClickEngagement.impact
+  });
 
-  // Determine dependency level
+  // Calculate dynamic dependency score from thinking delay comparison and key click evaluation
+  let thinkingDelayScore = 0;
+  let thinkingDelayImpact = '';
+  
+  if (sessionMessageCount > 0) {
+    const avgActualDelay = sessionActualThinkingDelay / sessionMessageCount;
+    const avgExpectedDelay = sessionExpectedThinkingTime / sessionMessageCount;
+    
+    // Dynamic scoring based on actual vs expected thinking time
+    if (avgActualDelay < avgExpectedDelay) {
+      thinkingDelayScore = Math.min(100, (avgExpectedDelay - avgActualDelay) * 2); // Fast responses increase dependency
+      thinkingDelayImpact = 'User responds faster than expected, potential over-reliance';
+    } else if (avgActualDelay > avgExpectedDelay * 2) {
+      thinkingDelayScore = Math.max(0, 100 - ((avgActualDelay - avgExpectedDelay) * 1)); // Slow responses decrease dependency
+      thinkingDelayImpact = 'User takes time to process AI responses, shows good thinking';
+    } else {
+      thinkingDelayScore = 50; // Perfect timing
+      thinkingDelayImpact = 'User response timing matches expectations';
+    }
+  }
+
+  // Calculate key click engagement score
+  let keyClickScore = 0;
+  let keyClickImpact = '';
+  
+  if (sessionMessageCount > 0) {
+    if (sessionKeyClicks > keyClickThreshold) {
+      keyClickScore = 25; // High engagement = healthy (lower dependency)
+      keyClickImpact = 'User is actively engaged and typing';
+    } else {
+      keyClickScore = 60; // Low engagement = potential dependency concern
+      keyClickImpact = 'User may be too passive or dependent';
+    }
+  }
+
+  // Combine all factors into final dependency score
+  const allFactors = [
+    messageFrequency,
+    questionComplexity,
+    responseDependency,
+    sessionDuration,
+    criticalThinking,
+    keyClickEngagement
+  ];
+
+  // Calculate weighted dependency score
+  const totalScore = allFactors.reduce((sum, factor) => sum + factor.score, 0);
+  const averageScore = totalScore / allFactors.length;
+  
+  // Determine dependency level based on combined analysis
   if (averageScore >= 70) {
     analysis.dependencyLevel = 'high';
     analysis.percentage = 100;
@@ -80,11 +142,11 @@ export const analyzeDependency = (chats, messages, currentSession) => {
     analysis.percentage = 33;
   }
 
-  // Calculate thinking effort
+  // Calculate thinking effort based on dynamic scores
   analysis.thinkingEffort = Math.min(100, Math.round(averageScore * 1.2));
 
-  // Generate recommendations
-  analysis.recommendations = generateRecommendations(analysis.dependencyLevel, analysis.factors);
+  // Generate recommendations based on all factors
+  analysis.recommendations = generateRecommendations(analysis.dependencyLevel, allFactors);
 
   return analysis;
 };
@@ -194,30 +256,34 @@ const analyzeResponseDependency = (messages) => {
   return { score, description, impact };
 };
 
-const analyzeSessionDuration = (currentSession, thinkingTimes) => {
-  // Use average thinking time instead of session duration
-  const avgThinkingTime = currentSession?.averageThinkingTime || 0;
-  const responseCount = thinkingTimes?.length || 0;
-
+const analyzeSessionDuration = (currentSession) => {
+  // Use dynamic expected thinking time calculation based on AI response length
+  const avgThinkingTime = currentSession?.averageActualThinkingDelay || 0;
+  const avgAIResponseLength = currentSession?.averageAIResponseLength || 0;
+  const thinkingTimeMultiplier = currentSession?.thinkingTimeMultiplier || 0.05;
+  
+  // Calculate expected thinking time dynamically
+  const expectedThinkingTime = avgAIResponseLength * thinkingTimeMultiplier;
+  
   let score = 0;
   let description = '';
   let impact = '';
 
-  if (avgThinkingTime > 30) {
+  if (avgThinkingTime > expectedThinkingTime * 2) {
     score = 30; // Low score for very slow responses (good - deep thinking)
-    description = `Deep thinking: ${avgThinkingTime.toFixed(1)}s average response time`;
+    description = `Deep thinking: ${avgThinkingTime.toFixed(1)}s vs expected ${expectedThinkingTime.toFixed(1)}s`;
     impact = 'User takes time to process AI responses carefully';
-  } else if (avgThinkingTime > 10) {
+  } else if (avgThinkingTime > expectedThinkingTime) {
     score = 45; // Moderate score for thoughtful responses
-    description = `Thoughtful responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    description = `Thoughtful responses: ${avgThinkingTime.toFixed(1)}s vs expected ${expectedThinkingTime.toFixed(1)}s`;
     impact = 'User balances thinking with efficiency';
-  } else if (avgThinkingTime > 3) {
+  } else if (avgThinkingTime > expectedThinkingTime * 0.5) {
     score = 60; // Higher score for quick responses (potential dependency)
-    description = `Quick responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    description = `Quick responses: ${avgThinkingTime.toFixed(1)}s vs expected ${expectedThinkingTime.toFixed(1)}s`;
     impact = 'User responds quickly, may need more consideration';
   } else {
     score = 80; // High score for very quick responses (dependency concern)
-    description = `Very quick responses: ${avgThinkingTime.toFixed(1)}s average response time`;
+    description = `Very quick responses: ${avgThinkingTime.toFixed(1)}s vs expected ${expectedThinkingTime.toFixed(1)}s`;
     impact = 'User may be responding impulsively without deep thought';
   }
 
@@ -293,14 +359,37 @@ const analyzeCriticalThinking = (messages) => {
     impact = 'User demonstrates strong critical thinking';
   } else if (thinkingRatio > 0.2) {
     score = 55;
-    description = `Moderate critical thinking: ${(thinkingRatio * 100).toFixed(0)}% show independent thought`;
+    description = `Moderate critical thinking: ${(thinkingRatio * 100).toFixed(0)}% show some critical thought`;
     impact = 'User shows some critical thinking';
   } else {
     score = 80;
-    description = `Low critical thinking: ${(thinkingRatio * 100).toFixed(0)}% show independent thought`;
-    impact = 'User may be over-relying on AI';
+    description = `Low critical thinking: ${(thinkingRatio * 100).toFixed(0)}% show minimal critical thought`;
+    impact = 'User rarely demonstrates critical thinking';
   }
 
+  return { score, description, impact };
+};
+
+const analyzeKeyClickEngagement = (currentSession) => {
+  const sessionKeyClicks = currentSession?.sessionKeyClicks || 0;
+  const keyClickThreshold = currentSession?.keyClickThreshold || 15;
+  
+  let score = 0;
+  let description = '';
+  let impact = '';
+  
+  if (sessionKeyClicks > keyClickThreshold) {
+    // High engagement = healthy (lower dependency)
+    score = 25;
+    description = `High engagement: ${sessionKeyClicks} key clicks (threshold: ${keyClickThreshold})`;
+    impact = 'User is actively engaged and typing';
+  } else {
+    // Low engagement = potential dependency concern
+    score = 60;
+    description = `Low engagement: ${sessionKeyClicks} key clicks (threshold: ${keyClickThreshold})`;
+    impact = 'User may be too passive or dependent';
+  }
+  
   return { score, description, impact };
 };
 
