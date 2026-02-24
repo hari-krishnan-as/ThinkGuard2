@@ -72,9 +72,26 @@ export const AppProvider = ({ children }) => {
     }
   };
 
+  const saveChatsToStorage = (chats) => {
+    localStorage.setItem('chatHistory', JSON.stringify(chats));
+  };
+
+  const loadChatsFromStorage = () => {
+    const savedChats = localStorage.getItem('chatHistory');
+    return savedChats ? JSON.parse(savedChats) : [];
+  };
+
+  const clearChatsFromStorage = () => {
+    localStorage.removeItem('chatHistory');
+  };
+
   const logout = () => {
     setUser(null);
     setIsAuthenticated(false);
+    clearChatsFromStorage();
+    setChats([]);
+    setCurrentChat(null);
+    setMessages([]);
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   };
@@ -334,6 +351,25 @@ export const AppProvider = ({ children }) => {
     login,
     logout
   };
+
+  // Load chat history on app initialization
+  useEffect(() => {
+    const savedChats = loadChatsFromStorage();
+    if (savedChats.length > 0) {
+      setChats(savedChats);
+      // Restore last active chat
+      const lastChat = savedChats[0];
+      if (lastChat) {
+        setCurrentChat(lastChat);
+        setMessages(lastChat.messages || []);
+      }
+    }
+  }, []);
+
+  // Save chats to localStorage whenever they change
+  useEffect(() => {
+    saveChatsToStorage(chats);
+  }, [chats]);
 
   return (
     <AppContext.Provider value={value}>
