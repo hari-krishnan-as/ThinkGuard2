@@ -16,13 +16,12 @@ const AdminDashboard = () => {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  
-  // Admin adjustment values
-  const [messageAdjustment, setMessageAdjustment] = useState(1);
-  const [keyClicksAdjustment, setKeyClicksAdjustment] = useState(1);
-  const [thinkingTimeAdjustment, setThinkingTimeAdjustment] = useState(1);
-  const [sessionDuration, setSessionDuration] = useState(15); // minutes
-  const [keyClickThreshold, setKeyClickThreshold] = useState(15);
+
+  // Admin System Settings
+  const [messagesPerInterval, setMessagesPerInterval] = useState(7);
+  const [keyClicksThreshold, setKeyClicksThreshold] = useState(40);
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [saveMessage, setSaveMessage] = useState('');
 
   const handleLogout = () => {
     logout();
@@ -36,14 +35,14 @@ const AdminDashboard = () => {
   const fetchAdminData = async () => {
     try {
       setLoading(true);
-      
+
       // Fetch admin stats
       const statsResponse = await fetch(`${API_BASE_URL}/admin/stats`, {
         headers: {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       const statsData = await statsResponse.json();
       if (statsData.success) {
         setStats(statsData.data);
@@ -55,10 +54,19 @@ const AdminDashboard = () => {
           'Authorization': `Bearer ${localStorage.getItem('token')}`
         }
       });
-      
+
       const usersData = await usersResponse.json();
       if (usersData.success) {
         setUsers(usersData.data);
+      }
+
+      // Fetch global settings
+      const settingsResponse = await fetch(`${API_BASE_URL}/admin/settings`);
+      const settingsData = await settingsResponse.json();
+
+      if (settingsData.success && settingsData.data) {
+        setMessagesPerInterval(settingsData.data.messagesPerInterval);
+        setKeyClicksThreshold(settingsData.data.keyClicksThreshold);
       }
 
     } catch (error) {
@@ -66,6 +74,41 @@ const AdminDashboard = () => {
       console.error('Admin dashboard error:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSaveSettings = async () => {
+    try {
+      setSavingSettings(true);
+      setSaveMessage('');
+
+      const response = await fetch(`${API_BASE_URL}/admin/settings`, {
+        method: 'PUT',
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          messagesPerInterval,
+          keyClicksThreshold
+        })
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setSaveMessage('Settings updated successfully!');
+        setTimeout(() => setSaveMessage(''), 3000);
+      } else {
+        setSaveMessage('Failed to update settings');
+        setTimeout(() => setSaveMessage(''), 3000);
+      }
+    } catch (error) {
+      console.error('Save settings error:', error);
+      setSaveMessage('Error saving settings');
+      setTimeout(() => setSaveMessage(''), 3000);
+    } finally {
+      setSavingSettings(false);
     }
   };
 
@@ -78,7 +121,7 @@ const AdminDashboard = () => {
           'Content-Type': 'application/json'
         }
       });
-      
+
       const data = await response.json();
       if (data.success) {
         // Refresh users list
@@ -155,204 +198,69 @@ const AdminDashboard = () => {
         </div>
       </div>
 
-      {/* Dependency Metrics Adjustment */}
+      {/* Global Dependency Settings */}
       <div className="bg-gray-800 rounded-lg border border-gray-700 overflow-hidden mb-8">
         <div className="p-4 sm:p-6 border-b border-gray-700">
-          <h2 className="text-xl font-semibold text-white mb-4">Dependency Metrics Adjustment</h2>
-          <p className="text-gray-400 text-sm mb-6">Adjust the scaling factors for dependency metrics across all users</p>
-          
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-3 gap-6">
-            {/* Message Count Adjustment */}
+          <h2 className="text-xl font-semibold text-white mb-4">Global AI Dependency Settings</h2>
+          <p className="text-gray-400 text-sm mb-6">These settings control how the AI dependency score is calculated for all users</p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+            {/* Messages per Interval Configuration */}
             <div className="bg-gray-700 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Message Count
+                Messages per Interval (Calculation Window)
               </label>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setMessageAdjustment(Math.max(1, messageAdjustment - 1))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-white font-medium min-w-[3rem] text-center">
-                  {messageAdjustment}
-                </span>
-                <button
-                  onClick={() => setMessageAdjustment(messageAdjustment + 1)}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
-                >
-                  +
-                </button>
-              </div>
+              <select
+                value={messagesPerInterval}
+                onChange={(e) => setMessagesPerInterval(Number(e.target.value))}
+                className="w-full bg-gray-600 text-white rounded p-2 border border-gray-500 focus:border-blue-500 focus:outline-none"
+              >
+                {[5, 6, 7, 8, 9, 10].map(val => (
+                  <option key={`msg-${val}`} value={val}>{val} messages</option>
+                ))}
+              </select>
               <p className="text-xs text-gray-400 mt-2">
-                Multiply chat count by {messageAdjustment}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {messageAdjustment} number used as dependency
+                A dependency score is assigned to the user after every continuous block of this many messages.
               </p>
             </div>
 
-            {/* Session Duration Adjustment */}
+            {/* Key Clicks Dependency Threshold */}
             <div className="bg-gray-700 p-4 rounded-lg">
               <label className="block text-sm font-medium text-gray-300 mb-2">
-                Session Duration (minutes)
+                Key Clicks Minimum Threshold
               </label>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setSessionDuration(Math.max(5, sessionDuration - 5))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-white font-medium min-w-[3rem] text-center">
-                  {sessionDuration}
-                </span>
-                <button
-                  onClick={() => setSessionDuration(Math.min(60, sessionDuration + 5))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
-                >
-                  +
-                </button>
-              </div>
+              <select
+                value={keyClicksThreshold}
+                onChange={(e) => setKeyClicksThreshold(Number(e.target.value))}
+                className="w-full bg-gray-600 text-white rounded p-2 border border-gray-500 focus:border-blue-500 focus:outline-none"
+              >
+                {[10, 20, 30, 40, 50].map(val => (
+                  <option key={`clicks-${val}`} value={val}>
+                    average {val} characters for {messagesPerInterval} messages
+                  </option>
+                ))}
+              </select>
               <p className="text-xs text-gray-400 mt-2">
-                {sessionDuration} minute sessions
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {sessionDuration} number used as dependency
-              </p>
-            </div>
-
-            {/* Key Click Threshold Adjustment */}
-            <div className="bg-gray-700 p-4 rounded-lg">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Key Click Threshold
-              </label>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setKeyClickThreshold(Math.max(1, keyClickThreshold - 1))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-white font-medium min-w-[3rem] text-center">
-                  {keyClickThreshold}
-                </span>
-                <button
-                  onClick={() => setKeyClickThreshold(keyClickThreshold + 1)}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                High engagement threshold: {keyClickThreshold} clicks
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {keyClickThreshold} number used as dependency
-              </p>
-            </div>
-
-            {/* Key Clicks Adjustment */}
-            <div className="bg-gray-700 p-4 rounded-lg">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Key Clicks
-              </label>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setKeyClicksAdjustment(Math.max(1, keyClicksAdjustment - 1))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-white font-medium min-w-[3rem] text-center">
-                  {keyClicksAdjustment}
-                </span>
-                <button
-                  onClick={() => setKeyClicksAdjustment(keyClicksAdjustment + 1)}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                Multiply key clicks by {keyClicksAdjustment}
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {keyClicksAdjustment} number used as dependency
-              </p>
-            </div>
-
-            {/* Thinking Time Adjustment */}
-            <div className="bg-gray-700 p-4 rounded-lg">
-              <label className="block text-sm font-medium text-gray-300 mb-2">
-                Thinking Time Multiplier
-              </label>
-              <div className="flex items-center space-x-3">
-                <button
-                  onClick={() => setThinkingTimeAdjustment(Math.max(0.01, thinkingTimeAdjustment - 0.01))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-l transition-colors"
-                >
-                  -
-                </button>
-                <span className="text-white font-medium min-w-[3rem] text-center">
-                  {thinkingTimeAdjustment}
-                </span>
-                <button
-                  onClick={() => setThinkingTimeAdjustment(Math.min(0.2, thinkingTimeAdjustment + 0.01))}
-                  className="px-3 py-1 bg-gray-600 hover:bg-gray-500 text-white rounded-r transition-colors"
-                >
-                  +
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-2">
-                {thinkingTimeAdjustment} seconds per word
-              </p>
-              <p className="text-xs text-gray-400 mt-1">
-                {thinkingTimeAdjustment} number used as dependency
+                If a user's average prompt length in an interval is BELOW this value, their AI Dependency score increases.
               </p>
             </div>
           </div>
 
-          <div className="mt-6 p-4 bg-gray-700 rounded-lg">
-            <h3 className="text-white font-medium mb-3">Quick Actions</h3>
-            <div className="flex flex-wrap gap-3">
-              <button
-                onClick={() => {
-                  setMessageAdjustment(1);
-                  setKeyClicksAdjustment(1);
-                  setThinkingTimeAdjustment(1);
-                  setSessionDuration(15);
-                  setKeyClickThreshold(15);
-                }}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-500 text-white rounded-lg transition-colors"
-              >
-                Reset to Default
-              </button>
-              <button
-                onClick={() => {
-                  setMessageAdjustment(2);
-                  setKeyClicksAdjustment(2);
-                  setThinkingTimeAdjustment(2);
-                  setSessionDuration(30);
-                  setKeyClickThreshold(25);
-                }}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
-              >
-                Double All (×2)
-              </button>
-              <button
-                onClick={() => {
-                  setMessageAdjustment(0.5);
-                  setKeyClicksAdjustment(0.5);
-                  setThinkingTimeAdjustment(0.5);
-                  setSessionDuration(7.5);
-                  setKeyClickThreshold(25);
-                }}
-                className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors"
-              >
-                Half All (×0.5)
-              </button>
+          <div className="mt-6 p-4 bg-gray-700 rounded-lg flex items-center justify-between">
+            <div className="text-sm text-green-400 font-medium h-5">
+              {saveMessage && <span>✔ {saveMessage}</span>}
             </div>
+            <button
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className={`px-6 py-2 rounded-lg font-medium transition-colors ${savingSettings
+                ? 'bg-blue-800 text-gray-300 cursor-not-allowed'
+                : 'bg-blue-600 hover:bg-blue-700 text-white shadow'
+                }`}
+            >
+              {savingSettings ? 'Saving...' : 'Save Settings Globally'}
+            </button>
           </div>
         </div>
       </div>
@@ -362,7 +270,7 @@ const AdminDashboard = () => {
         <div className="p-4 sm:p-6 border-b border-gray-700">
           <h2 className="text-xl font-semibold text-white">Users Management</h2>
         </div>
-        
+
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-gray-700">
@@ -391,31 +299,28 @@ const AdminDashboard = () => {
                     </div>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.role?.name === 'admin' || (user.role?.level && user.role.level >= 1)
-                        ? 'bg-purple-500 bg-opacity-20 text-purple-400' 
-                        : 'bg-gray-500 bg-opacity-20 text-gray-400'
-                    }`}>
+                    <span className={`px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.role?.name === 'admin' || (user.role?.level && user.role.level >= 1)
+                      ? 'bg-purple-500 bg-opacity-20 text-purple-400'
+                      : 'bg-gray-500 bg-opacity-20 text-gray-400'
+                      }`}>
                       {user.role?.displayName || user.role?.name || 'User'}
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                      user.isActive 
-                        ? 'bg-green-500 bg-opacity-20 text-green-400' 
-                        : 'bg-red-500 bg-opacity-20 text-red-400'
-                    }`}>
+                    <span className={`px-2 sm:px-3 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${user.isActive
+                      ? 'bg-green-500 bg-opacity-20 text-green-400'
+                      : 'bg-red-500 bg-opacity-20 text-red-400'
+                      }`}>
                       {user.isActive ? 'Active' : 'Inactive'}
                     </span>
                   </td>
                   <td className="px-4 sm:px-6 py-4 whitespace-nowrap text-sm">
                     <button
                       onClick={() => toggleUserStatus(user._id, user.isActive)}
-                      className={`px-3 py-1 rounded text-xs sm:text-sm font-medium transition-colors ${
-                        user.isActive
-                          ? 'bg-red-500 hover:bg-red-600 text-white'
-                          : 'bg-green-500 hover:bg-green-600 text-white'
-                      }`}
+                      className={`px-3 py-1 rounded text-xs sm:text-sm font-medium transition-colors ${user.isActive
+                        ? 'bg-red-500 hover:bg-red-600 text-white'
+                        : 'bg-green-500 hover:bg-green-600 text-white'
+                        }`}
                     >
                       {user.isActive ? 'Deactivate' : 'Activate'}
                     </button>

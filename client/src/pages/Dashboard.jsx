@@ -1,68 +1,83 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
 import { MessageSquare, TrendingUp, Clock, Brain } from 'lucide-react';
 import LogoutButton from '../components/LogoutButton';
+import { dependencyScoreService } from '../services/dependencyScoreService';
 
 const Dashboard = () => {
-  const { 
-    user, 
-    chats, 
-    dependencyLevel, 
-    thinkingEffort, 
-    averageThinkingTime, 
-    thinkingTimes,
-    messageAdjustment,
-    keyClicksAdjustment,
-    thinkingTimeAdjustment,
-    
-    // Session-based metrics
-    sessionMessageCount,
+  const {
+    user,
+    chats,
+    dependencyLevel,
+    thinkingEffort,
     sessionKeyClicks,
-    sessionAIResponseLength,
-    sessionExpectedThinkingTime,
     sessionActualThinkingDelay,
+    totalExpectedThinkingTime,
     sessionDependencyScore,
-    sessionStartTime,
-    sessionEndTime,
-    previousSessionScore,
-    isSessionActive,
-    logout 
+    dependencyCalculated,
+    messageHistory,
+    totalUserMessages,
+    currentIntervalMessages,
+    logout
   } = useAppContext();
   const navigate = useNavigate();
+  const [recentScores, setRecentScores] = useState([]);
+
+  useEffect(() => {
+    const fetchScores = async () => {
+      try {
+        const scores = await dependencyScoreService.getScores();
+        if (Array.isArray(scores)) {
+          // Deduplicate scores (protect against double-save legacy entries)
+          const uniqueScores = scores.filter((score, index, self) =>
+            index === self.findIndex((s) => (
+              s.sessionId === score.sessionId && s.intervalNumber === score.intervalNumber
+            ))
+          );
+          setRecentScores(uniqueScores.slice(0, 5));
+        }
+      } catch (err) {
+        console.error('Failed to fetch dashboard scores:', err);
+      }
+    };
+    if (user) {
+      fetchScores();
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
     navigate('/login');
   };
 
+
   const stats = [
     {
-      title: 'Session Messages',
-      value: sessionMessageCount,
+      title: 'Interval Progress',
+      value: currentIntervalMessages.length,
       icon: MessageSquare,
       color: 'text-blue-400'
     },
     {
-      title: 'Session Key Clicks',
-      value: Math.round(sessionKeyClicks * keyClicksAdjustment),
-      icon: Brain,
-      color: 'text-purple-400'
-    },
-    {
-      title: 'Current Dependency',
-      value: isSessionActive ? `${Math.round(sessionDependencyScore)}%` : 'No Active Session',
+      title: 'Total Key Clicks',
+      value: Math.round(sessionKeyClicks),
       icon: TrendingUp,
-      color: sessionDependencyScore >= 70 ? 'text-red-400' : sessionDependencyScore >= 40 ? 'text-yellow-400' : 'text-green-400'
+      color: 'text-green-400'
     },
     {
       title: 'Avg Thinking Time',
-      value: sessionMessageCount > 0 ? 
-        `${Math.round((sessionActualThinkingDelay / sessionMessageCount) * thinkingTimeAdjustment)}s` : 
-        '0s'
-      ,
+      value: dependencyCalculated && totalExpectedThinkingTime > 0 ?
+        `${Math.round(sessionActualThinkingDelay)}/${Math.round(totalExpectedThinkingTime)}s` : '0s',
       icon: Clock,
-      color: 'text-orange-400'
+      color: 'text-yellow-400'
+    },
+    {
+      title: 'Dependency Status',
+      value: dependencyCalculated ? dependencyLevel.toUpperCase() : 'ANALYZING',
+      icon: Brain,
+      color: dependencyLevel === 'high' ? 'text-red-400' :
+        dependencyLevel === 'medium' ? 'text-yellow-400' : 'text-green-400'
     }
   ];
 
@@ -146,6 +161,68 @@ const Dashboard = () => {
             </div>
           </div>
         </div>
+
+        {/* Recent Dependency Scores Table */}
+        <div className="bg-gray-800 p-6 rounded-lg mt-6">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-white text-xl font-bold flex items-center gap-2">
+              <Brain className="w-6 h-6 text-purple-400" />
+              Recent Dependency Scores
+            </h2>
+            <button
+              onClick={() => navigate('/analytics')}
+              className="text-blue-400 hover:text-blue-300 text-sm font-medium"
+            >
+              View Full History →
+            </button>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm text-left text-gray-400">
+              <thead className="text-xs text-gray-400 uppercase bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3">Score</th>
+                  <th className="px-6 py-3">Level</th>
+                  <th className="px-6 py-3">Key Clicks</th>
+                  <th className="px-6 py-3">Thinking Time</th>
+                  <th className="px-6 py-3">Date</th>
+                </tr>
+              </thead>
+              <tbody>
+                {recentScores.length > 0 ? recentScores.map((score, index) => (
+                  <tr key={index} className="bg-gray-800 border-b border-gray-700 hover:bg-gray-700">
+                    <td className={`px-6 py-4 font-bold text-lg ${score.score >= 70 ? 'text-red-400' : score.score >= 40 ? 'text-yellow-400' : 'text-green-400'}`}>
+                      {Math.round(score.score)}%
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`px-3 py-1 rounded-full text-xs font-bold ${score.level === 'high' ? 'bg-red-900/50 text-red-400 border border-red-500/30' :
+                          score.level === 'medium' ? 'bg-yellow-900/50 text-yellow-400 border border-yellow-500/30' :
+                            'bg-green-900/50 text-green-400 border border-green-500/30'
+                        }`}>
+                        {score.level.toUpperCase()}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-white">{score.keyClicks || 0}</td>
+                    <td className="px-6 py-4 text-white">
+                      {score.thinkingTime?.expected > 0 ?
+                        `${Math.round(score.thinkingTime.actual)}/${Math.round(score.thinkingTime.expected)}s` :
+                        'N/A'}
+                    </td>
+                    <td className="px-6 py-4 text-gray-400">
+                      {new Date(score.timestamp).toLocaleDateString()} at {new Date(score.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    </td>
+                  </tr>
+                )) : (
+                  <tr>
+                    <td colSpan="5" className="px-6 py-8 text-center text-gray-500">
+                      No dependency scores yet. keep chatting to generate analysis!
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
       </div>
     </div>
   );

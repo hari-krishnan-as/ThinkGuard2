@@ -8,12 +8,8 @@ const PORT = process.env.PORT || 5000;
 
 // Middleware
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://thinkguard-frontend1.onrender.com', 'https://thinkguard-frontend.onrender.com']
-    : ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:3001', 'http://127.0.0.1:3001'],
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization']
+  origin: ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  credentials: true
 }));
 
 app.use(express.json());
@@ -39,27 +35,27 @@ app.options('*', (req, res) => {
 const connectDB = async () => {
   const maxRetries = 5;
   let retries = 0;
-  
+
   while (retries < maxRetries) {
     try {
       console.log(`🔌 Attempting MongoDB connection (attempt ${retries + 1}/${maxRetries})...`);
-      
+
       await mongoose.connect(process.env.MONGODB_URI, {
         useNewUrlParser: true,
         useUnifiedTopology: true,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
       });
-      
+
       console.log('✅ MongoDB connected successfully');
       console.log(`📍 Database: ${mongoose.connection.name}`);
       console.log(`🌐 Connection host: ${mongoose.connection.host}`);
       return;
-      
+
     } catch (err) {
       console.error(`❌ MongoDB connection error (attempt ${retries + 1}):`, err.message);
       retries++;
-      
+
       if (retries < maxRetries) {
         console.log(`⏳ Retrying in 5 seconds...`);
         await new Promise(resolve => setTimeout(resolve, 5000));
@@ -90,7 +86,7 @@ app.get('/api/health', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-  res.json({ 
+  res.json({
     message: 'ThinkGuard Server is running!',
     status: 'healthy',
     timestamp: new Date().toISOString()
@@ -98,9 +94,32 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
+console.log('Loading API routes...');
 app.use('/api/users', require('./routes/UserRoutes'));
+console.log('UserRoutes loaded');
 app.use('/api', require('./routes/ChatRoutes'));
+console.log('ChatRoutes loaded');
 app.use('/api/admin', require('./routes/AdminRoutes'));
+console.log('AdminRoutes loaded');
+app.use('/api/dependency', require('./routes/dependencyScores'));
+console.log('DependencyScores route attempted to load');
+
+// Debug: Log all routes
+app._router.stack.forEach(function (middleware) {
+  if (middleware.route) {
+    console.log('Route registered:', middleware.route.path, middleware.route.methods);
+  }
+});
+
+// Test dependency route registration
+try {
+  const dependencyRoutes = require('./routes/dependencyScores');
+  console.log('Dependency routes module loaded successfully:', typeof dependencyRoutes);
+  app.use('/api/dependency', dependencyRoutes);
+  console.log('DependencyScores route registered successfully');
+} catch (error) {
+  console.error('Error loading dependency routes:', error);
+}
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

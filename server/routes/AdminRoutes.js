@@ -1,6 +1,7 @@
 const express = require('express');
 const User = require('../models/User');
 const Role = require('../models/Role');
+const SystemSettings = require('../models/SystemSettings');
 const auth = require('../middleware/AuthMiddleware');
 
 const router = express.Router();
@@ -16,6 +17,54 @@ const adminAuth = (req, res, next) => {
   next();
 };
 
+// @route   GET /api/admin/settings
+// @desc    Get global system dependency settings
+// @access  Public (or Private) -> We can just attach it here but allow open access or generic auth
+router.get('/settings', async (req, res) => {
+  try {
+    let settings = await SystemSettings.findOne();
+    if (!settings) {
+      // Create defaults if not exists
+      settings = await SystemSettings.create({
+        messagesPerInterval: 7,
+        keyClicksThreshold: 40
+      });
+    }
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Fetch settings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to fetch settings' });
+  }
+});
+
+// @route   PUT /api/admin/settings
+// @desc    Update global system dependency settings
+// @access  Private (Admin only)
+router.put('/settings', auth, adminAuth, async (req, res) => {
+  try {
+    const { messagesPerInterval, keyClicksThreshold } = req.body;
+
+    // Find first, or create
+    let settings = await SystemSettings.findOne();
+
+    if (settings) {
+      settings.messagesPerInterval = messagesPerInterval || settings.messagesPerInterval;
+      settings.keyClicksThreshold = keyClicksThreshold || settings.keyClicksThreshold;
+      await settings.save();
+    } else {
+      settings = await SystemSettings.create({
+        messagesPerInterval: messagesPerInterval || 7,
+        keyClicksThreshold: keyClicksThreshold || 40
+      });
+    }
+
+    res.json({ success: true, data: settings });
+  } catch (error) {
+    console.error('Update settings error:', error);
+    res.status(500).json({ success: false, message: 'Failed to update settings' });
+  }
+});
+
 // @route   GET /api/admin/stats
 // @desc    Get admin dashboard stats
 // @access  Private (Admin only)
@@ -26,7 +75,7 @@ router.get('/stats', auth, adminAuth, async (req, res) => {
       { $group: { _id: null, total: { $sum: '$stats.totalChats' } } }
     ]);
     const activeUsers = await User.countDocuments({ isActive: true });
-    
+
     // New users today
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -94,7 +143,7 @@ router.get('/users', auth, adminAuth, async (req, res) => {
 router.put('/users/:id/toggle-status', auth, adminAuth, async (req, res) => {
   try {
     const user = await User.findById(req.params.id).populate('role');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -147,7 +196,7 @@ router.put('/users/:id/role', auth, adminAuth, async (req, res) => {
     }
 
     const user = await User.findById(req.params.id).populate('role');
-    
+
     if (!user) {
       return res.status(404).json({
         success: false,
@@ -198,7 +247,7 @@ router.put('/users/:id/role', auth, adminAuth, async (req, res) => {
 router.get('/roles', auth, adminAuth, async (req, res) => {
   try {
     const roles = await Role.getActiveRoles();
-    
+
     res.json({
       success: true,
       data: roles

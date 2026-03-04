@@ -34,6 +34,39 @@ const mockResponses = [
   "That's a great point! Let me share some insights on this topic."
 ];
 
+// Generate intelligent fallback responses based on user input
+function generateIntelligentFallback(userMessage) {
+  const message = userMessage.toLowerCase().trim();
+  
+  // Greeting responses
+  if (message.includes('hello') || message.includes('hi') || message.includes('hey')) {
+    return "Hello! I'm here to help you. While I'm currently using a fallback response due to API limits, I'm still ready to assist with your questions and provide thoughtful responses.";
+  }
+  
+  // Question responses
+  if (message.includes('?') || message.includes('what') || message.includes('how') || message.includes('why') || message.includes('when') || message.includes('where')) {
+    return "That's a thoughtful question! While I'm operating with limited capacity due to API quota limits, I can still engage in meaningful dialogue. Could you tell me more about what specifically interests you about this topic?";
+  }
+  
+  // Help requests
+  if (message.includes('help') || message.includes('assist') || message.includes('support')) {
+    return "I'm here to help! Due to current API limitations, I'm providing fallback responses, but I can still engage with your questions. What specific area would you like to explore or discuss?";
+  }
+  
+  // Technical/Programming related
+  if (message.includes('code') || message.includes('program') || message.includes('javascript') || message.includes('react') || message.includes('python')) {
+    return "I see you're interested in programming! While I'm currently using fallback responses due to API limits, I can still discuss programming concepts. What specific programming topic would you like to explore?";
+  }
+  
+  // Learning/Education related
+  if (message.includes('learn') || message.includes('study') || message.includes('explain') || message.includes('teach')) {
+    return "I'd be happy to help with your learning! Though I'm operating with limited capacity right now, I can still engage in educational discussions. What subject or concept would you like to explore together?";
+  }
+  
+  // Default intelligent response
+  return "I understand your message and I'm here to help! While I'm currently using fallback responses due to API quota limitations, I'm still capable of meaningful conversation. Your input is valuable, and I'm ready to engage with your thoughts and questions. What would you like to discuss further?";
+}
+
 // Chat endpoint
 router.post('/chat', async (req, res) => {
   try {
@@ -74,7 +107,26 @@ router.post('/chat', async (req, res) => {
       } catch (geminiError) {
         console.error('❌ Gemini API Error:', geminiError.message);
         
-        // Fallback to mock response
+        // Check for specific quota exceeded error
+        if (geminiError.message.includes('429') || geminiError.message.includes('quota') || geminiError.message.includes('exceeded')) {
+          console.log('🚫 Gemini API quota exceeded, using intelligent fallback');
+          
+          // Provide intelligent fallback response based on user message
+          const intelligentFallback = generateIntelligentFallback(message);
+          
+          return res.json({
+            success: true,
+            data: {
+              response: intelligentFallback,
+              timestamp: new Date().toISOString(),
+              note: '⚠️ Gemini API quota exceeded - Using intelligent fallback response',
+              source: 'Intelligent Fallback',
+              quotaExceeded: true
+            }
+          });
+        }
+        
+        // For other Gemini errors, use mock response
         const fallbackResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
         
         return res.json({
