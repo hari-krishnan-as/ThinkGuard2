@@ -94,32 +94,12 @@ app.get('/', (req, res) => {
 });
 
 // API Routes
-console.log('Loading API routes...');
 app.use('/api/users', require('./routes/UserRoutes'));
-console.log('UserRoutes loaded');
 app.use('/api', require('./routes/ChatRoutes'));
-console.log('ChatRoutes loaded');
 app.use('/api/admin', require('./routes/AdminRoutes'));
-console.log('AdminRoutes loaded');
 app.use('/api/dependency', require('./routes/dependencyScores'));
-console.log('DependencyScores route attempted to load');
 
-// Debug: Log all routes
-app._router.stack.forEach(function (middleware) {
-  if (middleware.route) {
-    console.log('Route registered:', middleware.route.path, middleware.route.methods);
-  }
-});
 
-// Test dependency route registration
-try {
-  const dependencyRoutes = require('./routes/dependencyScores');
-  console.log('Dependency routes module loaded successfully:', typeof dependencyRoutes);
-  app.use('/api/dependency', dependencyRoutes);
-  console.log('DependencyScores route registered successfully');
-} catch (error) {
-  console.error('Error loading dependency routes:', error);
-}
 
 // Start server
 app.listen(PORT, '0.0.0.0', () => {

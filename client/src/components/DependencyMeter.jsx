@@ -134,6 +134,17 @@ const DependencyMeter = () => {
               {Math.round(sessionDependencyScore)}%
             </div>
           </div>
+
+          {/* Prompt Complexity */}
+          <div className="bg-gray-700 p-3 rounded-lg col-span-2">
+            <div className="text-gray-400 text-xs mb-1">
+              Prompt Complexity
+            </div>
+            <div className="text-white font-bold text-lg">
+              <div>Score: -- / 100</div>
+              <div className="text-sm font-normal text-gray-300 mt-0.5">Level: --</div>
+            </div>
+          </div>
         </div>
       </div>
 
