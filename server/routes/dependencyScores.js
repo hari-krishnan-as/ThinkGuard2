@@ -20,7 +20,9 @@ router.post('/scores', auth, async (req, res) => {
       intervalNumber,
       keyClicks,
       thinkingTime,
-      sessionId
+      sessionId,
+      complexityScore,
+      complexityLevel
     } = req.body;
 
     console.log('Received dependency score data:', {
@@ -30,6 +32,8 @@ router.post('/scores', auth, async (req, res) => {
       keyClicks,
       thinkingTime,
       sessionId,
+      complexityScore,
+      complexityLevel,
       userId: req.user?.id,
       user: req.user
     });
@@ -49,7 +53,9 @@ router.post('/scores', auth, async (req, res) => {
       intervalNumber,
       keyClicks,
       thinkingTime,
-      sessionId
+      sessionId,
+      complexityScore,
+      complexityLevel
     });
 
     const dependencyScore = new DependencyScore({
@@ -59,7 +65,9 @@ router.post('/scores', auth, async (req, res) => {
       intervalNumber,
       keyClicks,
       thinkingTime,
-      sessionId
+      sessionId,
+      complexityScore,
+      complexityLevel
     });
 
     console.log('DependencyScore document before save:', dependencyScore.toObject());

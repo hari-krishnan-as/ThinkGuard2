@@ -35,6 +35,15 @@ const dependencyScoreSchema = new mongoose.Schema({
       default: 0
     }
   },
+  complexityScore: {
+    type: Number,
+    default: 0
+  },
+  complexityLevel: {
+    type: String,
+    enum: ['Low', 'Medium', 'High', 'low', 'medium', 'high'],
+    default: 'Low'
+  },
   timestamp: {
     type: Date,
     default: Date.now

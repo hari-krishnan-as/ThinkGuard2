@@ -449,6 +449,7 @@ const DetailedAnalytics = () => {
                         <th className="text-left text-gray-400 pb-3 px-4">Level</th>
                         <th className="text-left text-gray-400 pb-3 px-4">Key Clicks</th>
                         <th className="text-left text-gray-400 pb-3 px-4">Thinking Time</th>
+                        <th className="text-left text-gray-400 pb-3 px-4">Prompt Complexity</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -469,6 +470,16 @@ const DetailedAnalytics = () => {
                             {score.thinkingTime && score.thinkingTime.expected > 0 ?
                               `${Math.round(score.thinkingTime.actual)}/${Math.round(score.thinkingTime.expected)}s` :
                               'N/A'}
+                          </td>
+                          <td className="text-gray-300 py-3 px-4">
+                            {score.complexityScore != null ? (
+                              <div className="flex flex-col">
+                                <span className="font-bold">{Math.round(score.complexityScore)}</span>
+                                <span className="text-xs text-gray-400">{score.complexityLevel}</span>
+                              </div>
+                            ) : (
+                              <span className="text-gray-500 italic">N/A</span>
+                            )}
                           </td>
                         </tr>
                       ))}

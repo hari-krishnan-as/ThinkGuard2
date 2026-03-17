@@ -50,6 +50,9 @@ export const AppProvider = ({ children }) => {
     keyClicksThreshold: 40
   });
 
+  const [latestNlpData, setLatestNlpData] = useState(null);
+  const [intervalComplexityScores, setIntervalComplexityScores] = useState([]);
+
   const lastAIResponseTimeRef = useRef(null);
 
   /* =======================
@@ -120,6 +123,7 @@ export const AppProvider = ({ children }) => {
     setDependencyCalculated(false);
     setMessageHistory([]);
     setCurrentIntervalMessages([]);
+    setIntervalComplexityScores([]);
   };
 
 
@@ -322,6 +326,14 @@ export const AppProvider = ({ children }) => {
       const intervalNumber = Math.floor(totalUserMessages / systemSettings.messagesPerInterval);
       const sessionId = `session_${Date.now()}`;
 
+      // Calculate average interval complexity
+      const validScores = intervalComplexityScores.filter(s => s != null && !isNaN(s));
+      const avgCompScore = validScores.length > 0 
+        ? validScores.reduce((a,b) => a+b, 0) / validScores.length 
+        : 0;
+
+      const compLevel = avgCompScore >= 70 ? "High" : avgCompScore >= 30 ? "Medium" : "Low";
+
       const scoreData = {
         score: finalScore,
         level: getDependencyLevel(finalScore),
@@ -331,7 +343,9 @@ export const AppProvider = ({ children }) => {
           actual: intervalThinkingDelay, // Use interval-specific thinking time
           expected: intervalExpectedThinkingTime // Use interval-specific expected time!
         },
-        sessionId
+        sessionId,
+        complexityScore: avgCompScore,
+        complexityLevel: compLevel
       };
 
       console.log('Client sending dependency score:', scoreData);
@@ -375,6 +389,7 @@ export const AppProvider = ({ children }) => {
         setIntervalKeyClicks(0);
         setIntervalThinkingDelay(0);
         setIntervalExpectedThinkingTime(0);
+        setIntervalComplexityScores([]);
 
       } catch (error) {
         console.error('Complete error saving dependency score:', error);
@@ -437,6 +452,10 @@ export const AppProvider = ({ children }) => {
     totalUserMessages,
     currentIntervalMessages,
     systemSettings,
+    latestNlpData,
+    setLatestNlpData,
+    intervalComplexityScores,
+    setIntervalComplexityScores,
 
     searchQuery,
     setSearchQuery,

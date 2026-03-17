@@ -1,5 +1,6 @@
 const express = require('express');
 const router = express.Router();
+const { analyzePrompt, calculateComplexity, getComplexityLevel } = require('../utils/nlpService');
 
 // Try to import Gemini AI, fallback to mock if not available
 let GoogleGenerativeAI;
@@ -94,13 +95,23 @@ router.post('/chat', async (req, res) => {
         
         console.log('✅ Gemini response received');
 
+        // Analyze prompt complexity
+        const nlpFeatures = analyzePrompt(message);
+        const complexityScore = calculateComplexity(nlpFeatures);
+        const complexityLevel = getComplexityLevel(complexityScore);
+
         return res.json({
           success: true,
           data: {
             response: text,
             timestamp: new Date().toISOString(),
             model: 'models/gemini-2.5-flash',
-            source: 'Google Gemini AI'
+            source: 'Google Gemini AI',
+            nlpAnalysis: {
+              ...nlpFeatures,
+              complexityScore,
+              complexityLevel
+            }
           }
         });
 
@@ -114,6 +125,11 @@ router.post('/chat', async (req, res) => {
           // Provide intelligent fallback response based on user message
           const intelligentFallback = generateIntelligentFallback(message);
           
+          // Analyze prompt complexity
+          const nlpFeatures = analyzePrompt(message);
+          const complexityScore = calculateComplexity(nlpFeatures);
+          const complexityLevel = getComplexityLevel(complexityScore);
+
           return res.json({
             success: true,
             data: {
@@ -121,7 +137,12 @@ router.post('/chat', async (req, res) => {
               timestamp: new Date().toISOString(),
               note: '⚠️ Gemini API quota exceeded - Using intelligent fallback response',
               source: 'Intelligent Fallback',
-              quotaExceeded: true
+              quotaExceeded: true,
+              nlpAnalysis: {
+                ...nlpFeatures,
+                complexityScore,
+                complexityLevel
+              }
             }
           });
         }
@@ -129,25 +150,46 @@ router.post('/chat', async (req, res) => {
         // For other Gemini errors, use mock response
         const fallbackResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
         
+        // Analyze prompt complexity
+        const nlpFeatures = analyzePrompt(message);
+        const complexityScore = calculateComplexity(nlpFeatures);
+        const complexityLevel = getComplexityLevel(complexityScore);
+
         return res.json({
           success: true,
           data: {
             response: fallbackResponse,
             timestamp: new Date().toISOString(),
             note: 'Using fallback response - Gemini API unavailable',
-            source: 'Mock Response'
+            source: 'Mock Response',
+            nlpAnalysis: {
+              ...nlpFeatures,
+              complexityScore,
+              complexityLevel
+            }
           }
         });
       }
     } else {
       // Use mock response when Gemini is not available
       const mockResponse = mockResponses[Math.floor(Math.random() * mockResponses.length)];
+      
+      // Analyze prompt complexity
+      const nlpFeatures = analyzePrompt(message);
+      const complexityScore = calculateComplexity(nlpFeatures);
+      const complexityLevel = getComplexityLevel(complexityScore);
+
       return res.json({
         success: true,
         data: {
           response: mockResponse,
           timestamp: new Date().toISOString(),
-          source: 'Mock Response'
+          source: 'Mock Response',
+          nlpAnalysis: {
+            ...nlpFeatures,
+            complexityScore,
+            complexityLevel
+          }
         }
       });
     }

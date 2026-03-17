@@ -1,7 +1,7 @@
 import React from 'react';
 import { useAppContext } from '../context/AppContext';
 import { useNavigate } from 'react-router-dom';
-import { BarChart3, TrendingUp } from 'lucide-react';
+import { BarChart3, TrendingUp, Cpu } from 'lucide-react';
 
 const DependencyMeter = () => {
   const {
@@ -14,7 +14,8 @@ const DependencyMeter = () => {
     sessionKeyClicks,
     sessionActualThinkingDelay,
     totalExpectedThinkingTime,
-    systemSettings
+    systemSettings,
+    latestNlpData
   } = useAppContext();
 
   const intervalTarget = systemSettings?.messagesPerInterval || 7;
@@ -137,13 +138,40 @@ const DependencyMeter = () => {
 
           {/* Prompt Complexity */}
           <div className="bg-gray-700 p-3 rounded-lg col-span-2">
-            <div className="text-gray-400 text-xs mb-1">
-              Prompt Complexity
+            <div className="flex items-center space-x-2 text-purple-400 mb-2">
+              <Cpu size={14} />
+              <div className="text-xs font-semibold uppercase tracking-wider">Prompt Analysis</div>
             </div>
-            <div className="text-white font-bold text-lg">
-              <div>Score: -- / 100</div>
-              <div className="text-sm font-normal text-gray-300 mt-0.5">Level: --</div>
-            </div>
+            
+            {latestNlpData ? (
+              <div className="grid grid-cols-2 gap-2 text-white text-sm">
+                <div>
+                  <span className="text-gray-400">Words:</span> <span className="font-bold">{latestNlpData.wordCount}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Score:</span> <span className="font-bold text-lg">{latestNlpData.complexityScore}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Nouns:</span> <span className="font-bold">{latestNlpData.nouns}</span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Level:</span>
+                  <span className={`ml-1 font-bold ${
+                    latestNlpData.complexityLevel === 'High' ? 'text-green-400' :
+                    latestNlpData.complexityLevel === 'Medium' ? 'text-yellow-400' : 'text-red-400'
+                  }`}>
+                    {latestNlpData.complexityLevel}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-400">Verbs:</span> <span className="font-bold">{latestNlpData.verbs}</span>
+                </div>
+              </div>
+            ) : (
+              <div className="text-gray-400 text-sm italic py-2">
+                Awaiting first message...
+              </div>
+            )}
           </div>
         </div>
       </div>

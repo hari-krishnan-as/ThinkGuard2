@@ -7,7 +7,15 @@ import DependencyMeter from '../components/DependencyMeter';
 import { API_BASE_URL } from '../config/api';
 
 const Chat = () => {
-  const { user, messages, dependencyLevel, thinkingEffort, addMessage } = useAppContext();
+  const { 
+    user, 
+    messages, 
+    dependencyLevel, 
+    thinkingEffort, 
+    addMessage,
+    setLatestNlpData,
+    setIntervalComplexityScores
+  } = useAppContext();
   const [message, setMessage] = useState('');
   const [isAtBottom, setIsAtBottom] = React.useState(true);
   const messagesEndRef = React.useRef(null);
@@ -80,6 +88,11 @@ const Chat = () => {
             timestamp: new Date().toISOString()
           };
           addMessage(aiResponse);
+
+          if (data.data.nlpAnalysis) {
+            setLatestNlpData(data.data.nlpAnalysis);
+            setIntervalComplexityScores(prev => [...prev, data.data.nlpAnalysis.complexityScore]);
+          }
         } else {
           throw new Error(data.message || 'Failed to get AI response');
         }
