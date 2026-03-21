@@ -50,8 +50,21 @@ export const AppProvider = ({ children }) => {
     keyClicksThreshold: 40
   });
 
-  const [latestNlpData, setLatestNlpData] = useState(null);
-  const [intervalComplexityScores, setIntervalComplexityScores] = useState([]);
+  const [latestNlpData, setLatestNlpData] = useState({
+    wordCount: 0,
+    sentenceCount: 0,
+    nouns: 0,
+    verbs: 0,
+    adjectives: 0
+  });
+
+  const [intervalNlpData, setIntervalNlpData] = useState({
+    wordCount: 0,
+    sentenceCount: 0,
+    nouns: 0,
+    verbs: 0,
+    adjectives: 0
+  });
 
   const lastAIResponseTimeRef = useRef(null);
 
@@ -123,7 +136,13 @@ export const AppProvider = ({ children }) => {
     setDependencyCalculated(false);
     setMessageHistory([]);
     setCurrentIntervalMessages([]);
-    setIntervalComplexityScores([]);
+    setIntervalNlpData({
+      wordCount: 0,
+      sentenceCount: 0,
+      nouns: 0,
+      verbs: 0,
+      adjectives: 0
+    });
   };
 
 
@@ -148,6 +167,26 @@ export const AppProvider = ({ children }) => {
     if (score >= 70) return 'high';
     if (score >= 40) return 'medium';
     return 'low';
+  };
+
+  const calculatePromptComplexity = (features) => {
+    let score = 0;
+    // basic structure contribution
+    score += (features.wordCount || 0) * 1.5;
+    score += (features.sentenceCount || 0) * 5;
+
+    // linguistic richness
+    score += (features.nouns || 0) * 2;
+    score += (features.verbs || 0) * 2;
+    score += (features.adjectives || 0) * 1.5;
+
+    return Math.min(Math.round(score), 100);
+  };
+
+  const getPromptComplexityLevel = (score) => {
+    if (score < 30) return "Low";
+    if (score < 70) return "Medium";
+    return "High";
   };
 
   /* =======================
@@ -326,13 +365,9 @@ export const AppProvider = ({ children }) => {
       const intervalNumber = Math.floor(totalUserMessages / systemSettings.messagesPerInterval);
       const sessionId = `session_${Date.now()}`;
 
-      // Calculate average interval complexity
-      const validScores = intervalComplexityScores.filter(s => s != null && !isNaN(s));
-      const avgCompScore = validScores.length > 0 
-        ? validScores.reduce((a,b) => a+b, 0) / validScores.length 
-        : 0;
-
-      const compLevel = avgCompScore >= 70 ? "High" : avgCompScore >= 30 ? "Medium" : "Low";
+      // Calculate final interval complexity score using the aggregated totals
+      const avgCompScore = calculatePromptComplexity(intervalNlpData);
+      const compLevel = getPromptComplexityLevel(avgCompScore);
 
       const scoreData = {
         score: finalScore,
@@ -389,7 +424,13 @@ export const AppProvider = ({ children }) => {
         setIntervalKeyClicks(0);
         setIntervalThinkingDelay(0);
         setIntervalExpectedThinkingTime(0);
-        setIntervalComplexityScores([]);
+        setIntervalNlpData({
+          wordCount: 0,
+          sentenceCount: 0,
+          nouns: 0,
+          verbs: 0,
+          adjectives: 0
+        });
 
       } catch (error) {
         console.error('Complete error saving dependency score:', error);
@@ -454,8 +495,8 @@ export const AppProvider = ({ children }) => {
     systemSettings,
     latestNlpData,
     setLatestNlpData,
-    intervalComplexityScores,
-    setIntervalComplexityScores,
+    intervalNlpData,
+    setIntervalNlpData,
 
     searchQuery,
     setSearchQuery,

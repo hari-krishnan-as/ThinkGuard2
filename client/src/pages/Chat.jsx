@@ -14,7 +14,7 @@ const Chat = () => {
     thinkingEffort, 
     addMessage,
     setLatestNlpData,
-    setIntervalComplexityScores
+    setIntervalNlpData
   } = useAppContext();
   const [message, setMessage] = useState('');
   const [isAtBottom, setIsAtBottom] = React.useState(true);
@@ -90,8 +90,15 @@ const Chat = () => {
           addMessage(aiResponse);
 
           if (data.data.nlpAnalysis) {
-            setLatestNlpData(data.data.nlpAnalysis);
-            setIntervalComplexityScores(prev => [...prev, data.data.nlpAnalysis.complexityScore]);
+            const nlp = data.data.nlpAnalysis;
+            setLatestNlpData(nlp);
+            setIntervalNlpData(prev => ({
+              wordCount: prev.wordCount + (nlp.wordCount || 0),
+              sentenceCount: prev.sentenceCount + (nlp.sentenceCount || 0),
+              nouns: prev.nouns + (nlp.nouns || 0),
+              verbs: prev.verbs + (nlp.verbs || 0),
+              adjectives: prev.adjectives + (nlp.adjectives || 0)
+            }));
           }
         } else {
           throw new Error(data.message || 'Failed to get AI response');

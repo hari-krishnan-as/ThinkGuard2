@@ -15,11 +15,31 @@ const DependencyMeter = () => {
     sessionActualThinkingDelay,
     totalExpectedThinkingTime,
     systemSettings,
-    latestNlpData
+    intervalNlpData
   } = useAppContext();
 
   const intervalTarget = systemSettings?.messagesPerInterval || 7;
 
+  // Calculate live complexity score from interval data
+  const calculateLiveComplexity = (features) => {
+    let score = 0;
+    score += (features?.wordCount || 0) * 1.5;
+    score += (features?.sentenceCount || 0) * 5;
+    score += (features?.nouns || 0) * 2;
+    score += (features?.verbs || 0) * 2;
+    score += (features?.adjectives || 0) * 1.5;
+    return Math.min(Math.round(score), 100);
+  };
+  
+  const getLiveComplexityLevel = (score) => {
+    if (score < 30) return "Low";
+    if (score < 70) return "Medium";
+    return "High";
+  };
+
+  const liveComplexityScore = calculateLiveComplexity(intervalNlpData);
+  const liveComplexityLevel = getLiveComplexityLevel(liveComplexityScore);
+  
   const navigate = useNavigate();
 
   return (
@@ -138,38 +158,43 @@ const DependencyMeter = () => {
 
           {/* Prompt Complexity */}
           <div className="bg-gray-700 p-3 rounded-lg col-span-2">
-            <div className="flex items-center space-x-2 text-purple-400 mb-2">
-              <Cpu size={14} />
-              <div className="text-xs font-semibold uppercase tracking-wider">Prompt Analysis</div>
+            <div className="flex items-center justify-between mb-2">
+              <div className="flex items-center space-x-2 text-purple-400">
+                <Cpu size={14} />
+                <div className="text-xs font-semibold uppercase tracking-wider">Interval Prompt Analysis</div>
+              </div>
+              <div className="text-xs text-gray-400">
+                {currentIntervalMessages.length} / {intervalTarget}
+              </div>
             </div>
             
-            {latestNlpData ? (
+            {(intervalNlpData?.wordCount > 0) ? (
               <div className="grid grid-cols-2 gap-2 text-white text-sm">
                 <div>
-                  <span className="text-gray-400">Words:</span> <span className="font-bold">{latestNlpData.wordCount}</span>
+                  <span className="text-gray-400">Words:</span> <span className="font-bold">{intervalNlpData.wordCount}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Score:</span> <span className="font-bold text-lg">{latestNlpData.complexityScore}</span>
+                  <span className="text-gray-400">Projected Score:</span> <span className="font-bold text-lg">{liveComplexityScore}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Nouns:</span> <span className="font-bold">{latestNlpData.nouns}</span>
+                  <span className="text-gray-400">Nouns:</span> <span className="font-bold">{intervalNlpData.nouns}</span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Level:</span>
+                  <span className="text-gray-400">Projected Level:</span>
                   <span className={`ml-1 font-bold ${
-                    latestNlpData.complexityLevel === 'High' ? 'text-green-400' :
-                    latestNlpData.complexityLevel === 'Medium' ? 'text-yellow-400' : 'text-red-400'
+                    liveComplexityLevel === 'High' ? 'text-green-400' :
+                    liveComplexityLevel === 'Medium' ? 'text-yellow-400' : 'text-red-400'
                   }`}>
-                    {latestNlpData.complexityLevel}
+                    {liveComplexityLevel}
                   </span>
                 </div>
                 <div>
-                  <span className="text-gray-400">Verbs:</span> <span className="font-bold">{latestNlpData.verbs}</span>
+                  <span className="text-gray-400">Verbs:</span> <span className="font-bold">{intervalNlpData.verbs}</span>
                 </div>
               </div>
             ) : (
               <div className="text-gray-400 text-sm italic py-2">
-                Awaiting first message...
+                Awaiting first message in interval...
               </div>
             )}
           </div>

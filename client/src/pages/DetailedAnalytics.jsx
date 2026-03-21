@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Brain, Target, Lightbulb, TrendingUp, Clock, MessageSquare, BarChart3, Activity, AlertTriangle, Keyboard } from 'lucide-react';
 import { useAppContext } from '../context/AppContext';
 import { dependencyScoreService } from '../services/dependencyScoreService';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const DetailedAnalytics = () => {
   const {
@@ -425,18 +426,36 @@ const DetailedAnalytics = () => {
                     <BarChart3 size={16} className="text-purple-400" />
                     Score Trend
                   </h4>
-                  <div className="h-32 flex items-end space-x-2">
-                    {dependencyScores.slice(-10).reverse().map((score, index) => (
-                      <div key={index} className="flex-1 flex flex-col items-center">
-                        <div
-                          className="w-full bg-gradient-to-t from-purple-500 to-purple-400 rounded-t"
-                          style={{ height: `${score.score}%` }}
+                  <div className="h-64 mt-4">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <LineChart data={dependencyScores.slice(0, 10).reverse()}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#4a5568" vertical={false} />
+                        <XAxis 
+                          dataKey="intervalNumber" 
+                          stroke="#a0aec0" 
+                          tickFormatter={(value) => `#${value}`}
                         />
-                        <div className="text-xs text-gray-400 mt-1">
-                          #{score.intervalNumber}
-                        </div>
-                      </div>
-                    ))}
+                        <YAxis 
+                          domain={[0, 100]} 
+                          stroke="#a0aec0"
+                          tickFormatter={(value) => `${value}%`}
+                        />
+                        <Tooltip 
+                          contentStyle={{ backgroundColor: '#2d3748', border: 'none', borderRadius: '8px', color: '#fff' }}
+                          itemStyle={{ color: '#fff' }}
+                          labelFormatter={(label) => `Interval #${label}`}
+                          formatter={(value) => [`${Math.round(value)}%`, 'Score']}
+                        />
+                        <Line 
+                          type="monotone" 
+                          dataKey="score" 
+                          stroke="#9f7aea" 
+                          strokeWidth={3} 
+                          dot={{ r: 4, fill: '#9f7aea', strokeWidth: 2, stroke: '#2d3748' }}
+                          activeDot={{ r: 6, fill: '#9f7aea', strokeWidth: 0 }}
+                        />
+                      </LineChart>
+                    </ResponsiveContainer>
                   </div>
                 </div>
 
