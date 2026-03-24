@@ -289,8 +289,54 @@ export const AppProvider = ({ children }) => {
 
     if (message.sender === 'user') {
       const userMessageLength = message.text?.length || 0;
-      setSessionKeyClicks(prev => prev + userMessageLength);
-      setIntervalKeyClicks(prev => prev + userMessageLength); // Track interval key clicks
+      
+      let delay = 0;
+      if (lastAIResponseTimeRef.current) {
+        delay = (now - lastAIResponseTimeRef.current) / 1000;
+      }
+
+      if (systemSettings.messagesPerInterval > 0 && currentIntervalMessages.length >= systemSettings.messagesPerInterval) {
+        // HOLD-AND-RESET logic: We received the NEXT message (e.g., 6th)
+        // 1. Calculate and store the PREVIOUS interval data
+        const finalScore = calculateDependencyScoreOnly(currentIntervalMessages);
+        storeCompletedIntervalData(
+          currentIntervalMessages,
+          intervalKeyClicks,
+          intervalThinkingDelay,
+          intervalExpectedThinkingTime,
+          intervalNlpData,
+          finalScore
+        );
+        
+        // 2. Start new interval, initialize with THIS message's data
+        setIntervalKeyClicks(userMessageLength);
+        setIntervalThinkingDelay(delay);
+        setIntervalExpectedThinkingTime(0); // Expected time comes from AI replies
+        setIntervalNlpData({ wordCount: 0, sentenceCount: 0, nouns: 0, verbs: 0, adjectives: 0 });
+        
+        // Reset legacy session metrics that UI components consume as interval metrics
+        setSessionKeyClicks(userMessageLength);
+        setSessionActualThinkingDelay(delay);
+        setTotalExpectedThinkingTime(0);
+
+        setCurrentIntervalMessages([{
+          type: 'user',
+          length: userMessageLength,
+          timestamp: now
+        }]);
+      } else {
+        // Normal accumulation
+        setIntervalKeyClicks(prev => prev + userMessageLength);
+        setIntervalThinkingDelay(prev => prev + delay);
+        setSessionKeyClicks(prev => prev + userMessageLength);
+        setSessionActualThinkingDelay(prev => prev + delay);
+        
+        setCurrentIntervalMessages(prev => [...prev, {
+          type: 'user',
+          length: userMessageLength,
+          timestamp: now
+        }]);
+      }
 
       // Increment total user message count
       setTotalUserMessages(prev => prev + 1);
@@ -301,19 +347,6 @@ export const AppProvider = ({ children }) => {
         length: userMessageLength,
         timestamp: now
       }]);
-
-      // Add to current interval
-      setCurrentIntervalMessages(prev => [...prev, {
-        type: 'user',
-        length: userMessageLength,
-        timestamp: now
-      }]);
-
-      if (lastAIResponseTimeRef.current) {
-        const delay = (now - lastAIResponseTimeRef.current) / 1000;
-        setSessionActualThinkingDelay(prev => prev + delay);
-        setIntervalThinkingDelay(prev => prev + delay); // Track interval thinking time
-      }
     }
 
     if (message.sender === 'ai') {
@@ -325,16 +358,15 @@ export const AppProvider = ({ children }) => {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  // Trigger score calculation reliably via effect instead of in state updater
+  // Trigger UI score calculation for interval immediately upon fully receiving the Nth user message
   useEffect(() => {
-    if (systemSettings.messagesPerInterval > 0 && currentIntervalMessages.length >= systemSettings.messagesPerInterval) {
-      calculateDependencyScoreForInterval([...currentIntervalMessages]);
-      setCurrentIntervalMessages([]); // clear it out after processing
+    if (systemSettings.messagesPerInterval > 0 && currentIntervalMessages.length === systemSettings.messagesPerInterval) {
+      calculateDependencyScoreOnly([...currentIntervalMessages]);
     }
   }, [currentIntervalMessages.length, systemSettings.messagesPerInterval]);
 
-  const calculateDependencyScoreForInterval = async (intervalMessages) => {
-    if (intervalMessages.length === 0) return;
+  const calculateDependencyScoreOnly = (intervalMessages) => {
+    if (intervalMessages.length === 0) return 50;
 
     // 1. Typing Effort Score (Context-Based)
     const avgCharsPerMessage = intervalMessages.reduce((sum, m) => sum + m.length, 0) / intervalMessages.length;
@@ -353,30 +385,42 @@ export const AppProvider = ({ children }) => {
     let finalScore = 50 + typingScore;
     finalScore = Math.max(0, Math.min(100, finalScore));
 
-    // Update dependency score for this interval
+    // Update dependency score for this interval in UI
     setSessionDependencyScore(finalScore);
     setDependencyCalculated(true);
     setPreviousSessionScore(finalScore);
     setDependencyLevel(getDependencyLevel(finalScore));
     setThinkingEffort(finalScore);
 
-    // Save to database
+    return finalScore;
+  };
+
+  const storeCompletedIntervalData = async (
+    intervalMessages,
+    clicks,
+    thinkingTime,
+    expectedTime,
+    nlpData,
+    finalScore
+  ) => {
     try {
-      const intervalNumber = Math.floor(totalUserMessages / systemSettings.messagesPerInterval);
+      const intervalNumber = Math.max(1, Math.floor(totalUserMessages / systemSettings.messagesPerInterval));
       const sessionId = `session_${Date.now()}`;
 
       // Calculate final interval complexity score using the aggregated totals
-      const avgCompScore = calculatePromptComplexity(intervalNlpData);
+      const avgCompScore = calculatePromptComplexity(nlpData);
       const compLevel = getPromptComplexityLevel(avgCompScore);
+
+      const avgCharsPerMessage = intervalMessages.reduce((sum, m) => sum + m.length, 0) / (intervalMessages.length || 1);
 
       const scoreData = {
         score: finalScore,
         level: getDependencyLevel(finalScore),
         intervalNumber,
-        keyClicks: intervalKeyClicks, // Use interval-specific key clicks
+        keyClicks: clicks || 0,
         thinkingTime: {
-          actual: intervalThinkingDelay, // Use interval-specific thinking time
-          expected: intervalExpectedThinkingTime // Use interval-specific expected time!
+          actual: thinkingTime || 0,
+          expected: expectedTime || 0
         },
         sessionId,
         complexityScore: avgCompScore,
@@ -387,16 +431,15 @@ export const AppProvider = ({ children }) => {
       console.log('Interval details:', {
         intervalNumber,
         totalUserMessages,
-        intervalKeyClicks,
-        intervalThinkingDelay,
+        intervalKeyClicks: clicks,
+        intervalThinkingDelay: thinkingTime,
         avgCharsPerMessage,
         finalScore
       });
 
       try {
         console.log('Making API call to /api/dependency/scores');
-        console.log('Token:', localStorage.getItem('token'));
-
+        
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const response = await fetch(`${API_URL}/api/dependency/scores`, {
           method: 'POST',
@@ -407,38 +450,20 @@ export const AppProvider = ({ children }) => {
           body: JSON.stringify(scoreData)
         });
 
-        console.log('Response status:', response.status);
-        console.log('Response ok:', response.ok);
-
         if (!response.ok) {
           const errorText = await response.text();
           console.error('Server error response:', errorText);
-          console.error('Status code:', response.status);
           throw new Error(`HTTP ${response.status}: ${errorText}`);
         }
 
         const result = await response.json();
         console.log('Score saved successfully:', result);
-
-        // Reset interval counters after successful save
-        setIntervalKeyClicks(0);
-        setIntervalThinkingDelay(0);
-        setIntervalExpectedThinkingTime(0);
-        setIntervalNlpData({
-          wordCount: 0,
-          sentenceCount: 0,
-          nouns: 0,
-          verbs: 0,
-          adjectives: 0
-        });
-
       } catch (error) {
         console.error('Complete error saving dependency score:', error);
-        console.error('Error stack:', error.stack);
       }
 
     } catch (error) {
-      console.error('Error saving dependency score:', error);
+      console.error('Error in storeCompletedIntervalData wrapper:', error);
     }
   };
 
