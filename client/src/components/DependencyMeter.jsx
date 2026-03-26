@@ -24,21 +24,38 @@ const DependencyMeter = () => {
   const calculateLiveComplexity = (features) => {
     let score = 0;
     score += (features?.wordCount || 0) * 1.5;
-    score += (features?.sentenceCount || 0) * 5;
+    score += Math.min((features?.sentenceCount || 0) * 5, 20); // Cap sentences at 20 pts
     score += (features?.nouns || 0) * 2;
     score += (features?.verbs || 0) * 2;
     score += (features?.adjectives || 0) * 1.5;
-    return Math.min(Math.round(score), 100);
+    let finalScore = Math.min(Math.round(score), 100);
+    const verbs = features?.verbs || 0;
+
+    if (verbs < 5) {
+      finalScore = Math.min(finalScore, 29);
+    } else if (verbs < 10) {
+      finalScore = Math.max(30, Math.min(finalScore, 69));
+    } else {
+      finalScore = Math.max(70, finalScore);
+    }
+    return finalScore;
   };
   
-  const getLiveComplexityLevel = (score) => {
-    if (score < 30) return "Low";
-    if (score < 70) return "Medium";
+  const getLiveComplexityLevel = (score, verbs = 0) => {
+    if (verbs < 5) return "Low";
+    if (verbs < 10) return "Medium";
     return "High";
+  };
+  
+  const getLiveComplexityReason = (score, verbs = 0) => {
+    if (verbs < 5) return "Low due to less explanation";
+    if (verbs < 10) return "Medium due to moderate explanation";
+    return "High due to detailed explanation";
   };
 
   const liveComplexityScore = calculateLiveComplexity(intervalNlpData);
-  const liveComplexityLevel = getLiveComplexityLevel(liveComplexityScore);
+  const liveComplexityLevel = getLiveComplexityLevel(liveComplexityScore, intervalNlpData?.verbs || 0);
+  const liveComplexityReason = getLiveComplexityReason(liveComplexityScore, intervalNlpData?.verbs || 0);
   
   const navigate = useNavigate();
 
@@ -179,7 +196,7 @@ const DependencyMeter = () => {
                 <div>
                   <span className="text-gray-400">Nouns:</span> <span className="font-bold">{intervalNlpData.nouns}</span>
                 </div>
-                <div>
+                <div className="col-span-2">
                   <span className="text-gray-400">Projected Level:</span>
                   <span className={`ml-1 font-bold ${
                     liveComplexityLevel === 'High' ? 'text-green-400' :
@@ -187,6 +204,9 @@ const DependencyMeter = () => {
                   }`}>
                     {liveComplexityLevel}
                   </span>
+                  <div className="text-xs text-gray-400 mt-1 italic block break-words whitespace-normal">
+                    {liveComplexityReason}
+                  </div>
                 </div>
                 <div>
                   <span className="text-gray-400">Verbs:</span> <span className="font-bold">{intervalNlpData.verbs}</span>

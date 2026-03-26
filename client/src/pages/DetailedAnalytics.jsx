@@ -57,22 +57,14 @@ const DetailedAnalytics = () => {
         return;
       }
 
-      console.log('=== FETCHING DEPENDENCY DATA ===', now);
-
       // Fetch dependency scores and stats
       const [scores, stats] = await Promise.all([
         dependencyScoreService.getScores(),
         dependencyScoreService.getStats()
       ]);
 
-      console.log('=== FETCH RESULTS ===', now);
-      console.log('Scores received:', scores?.length || 0);
-      console.log('Stats received:', stats ? 'yes' : 'no');
-
       // Ensure we have valid data
       if (Array.isArray(scores) && scores.length > 0) {
-        console.log('=== SETTING DEPENDENCY SCORES ===', now);
-
         // Deduplicate scores (protect against legacy double-save bugs from StrictMode)
         const uniqueScores = scores.filter((score, index, self) =>
           index === self.findIndex((s) => (
@@ -84,7 +76,6 @@ const DetailedAnalytics = () => {
         setDependencyStats(stats);
         setLastFetchTime(now);
       } else {
-        console.log('=== SETTING EMPTY SCORES ===', now);
         setDependencyScores([]);
         setDependencyStats(null);
         setLastFetchTime(now);

@@ -39,8 +39,6 @@ const Register = () => {
     }
 
     try {
-      console.log('🚀 Sending registration request...');
-      
       const response = await fetch(`${API_BASE_URL}/users/register`, {
         method: 'POST',
         headers: {
@@ -53,9 +51,7 @@ const Register = () => {
         }),
       });
 
-      console.log('📡 Response status:', response.status);
       const data = await response.json();
-      console.log('📊 Response data:', data);
 
       if (data.success) {
         setSuccess('Registration successful! Redirecting to login...');

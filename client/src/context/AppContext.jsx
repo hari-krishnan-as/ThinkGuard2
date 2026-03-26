@@ -173,19 +173,29 @@ export const AppProvider = ({ children }) => {
     let score = 0;
     // basic structure contribution
     score += (features.wordCount || 0) * 1.5;
-    score += (features.sentenceCount || 0) * 5;
+    score += Math.min((features.sentenceCount || 0) * 5, 20); // Cap sentence pts
 
     // linguistic richness
     score += (features.nouns || 0) * 2;
     score += (features.verbs || 0) * 2;
     score += (features.adjectives || 0) * 1.5;
 
-    return Math.min(Math.round(score), 100);
+    let finalScore = Math.min(Math.round(score), 100);
+    const verbs = features.verbs || 0;
+
+    if (verbs < 5) {
+      finalScore = Math.min(finalScore, 29); // cap at maximum Low score
+    } else if (verbs < 10) {
+      finalScore = Math.max(30, Math.min(finalScore, 69)); // bound to Medium score
+    } else {
+      finalScore = Math.max(70, finalScore); // bound to High score
+    }
+    return finalScore;
   };
 
-  const getPromptComplexityLevel = (score) => {
-    if (score < 30) return "Low";
-    if (score < 70) return "Medium";
+  const getPromptComplexityLevel = (score, verbs = 0) => {
+    if (verbs < 5) return "Low";
+    if (verbs < 10) return "Medium";
     return "High";
   };
 
@@ -409,7 +419,7 @@ export const AppProvider = ({ children }) => {
 
       // Calculate final interval complexity score using the aggregated totals
       const avgCompScore = calculatePromptComplexity(nlpData);
-      const compLevel = getPromptComplexityLevel(avgCompScore);
+      const compLevel = getPromptComplexityLevel(avgCompScore, nlpData.verbs || 0);
 
       const avgCharsPerMessage = intervalMessages.reduce((sum, m) => sum + m.length, 0) / (intervalMessages.length || 1);
 
@@ -427,19 +437,7 @@ export const AppProvider = ({ children }) => {
         complexityLevel: compLevel
       };
 
-      console.log('Client sending dependency score:', scoreData);
-      console.log('Interval details:', {
-        intervalNumber,
-        totalUserMessages,
-        intervalKeyClicks: clicks,
-        intervalThinkingDelay: thinkingTime,
-        avgCharsPerMessage,
-        finalScore
-      });
-
       try {
-        console.log('Making API call to /api/dependency/scores');
-        
         const API_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
         const response = await fetch(`${API_URL}/api/dependency/scores`, {
           method: 'POST',
@@ -457,7 +455,6 @@ export const AppProvider = ({ children }) => {
         }
 
         const result = await response.json();
-        console.log('Score saved successfully:', result);
       } catch (error) {
         console.error('Complete error saving dependency score:', error);
       }
